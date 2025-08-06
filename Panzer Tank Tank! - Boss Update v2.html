@@ -1,0 +1,2774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panzer Tank Tank! - Boss Update v2</title>
+    <style>
+        /* START OF CSS */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            color: #00ff00;
+            font-family: 'Orbitron', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #gameContainer {
+            width: 800px; 
+            height: 600px; 
+            background: #000;
+            border: 2px solid #00ff00;
+            position: relative;
+            box-shadow: 0 0 25px #00ff00; 
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+            cursor: crosshair;
+        }
+
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background: linear-gradient(45deg, #001800, #000000); 
+            padding: 25px; 
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .screen.active {
+            display: flex;
+        }
+
+        .title {
+            font-size: 48px; 
+            font-weight: 900;
+            color: #ffff00;
+            text-shadow: 0 0 15px #ffff00; 
+            margin-bottom: 30px; 
+            text-align: center;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.75; } 
+        }
+
+        .menu-item {
+            font-size: 20px; 
+            color: #00ff00;
+            margin: 10px 0; 
+            padding: 10px 20px; 
+            border: 1px solid #00ff00;
+            background: transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Orbitron', monospace;
+            text-align: center;
+             min-width: 200px; 
+             box-sizing: border-box;
+        }
+
+        .menu-item:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 12px #00ff00;
+        }
+
+        .hud {
+            position: absolute;
+            top: 8px; 
+            left: 8px; 
+            color: #00ff00;
+            font-size: 14px; 
+            z-index: 100;
+            background-color: rgba(0,0,0,0.65);
+            padding: 10px; 
+            border-radius: 6px; 
+            border: 1px solid rgba(0,255,0,0.4);
+        }
+        .hud div {
+            margin-bottom: 5px; 
+        }
+        .hud div:last-child {
+            margin-bottom: 0;
+        }
+
+
+        #repairKitStockDisplay {
+            position: absolute;
+            bottom: 8px; 
+            right: 8px; 
+            display: flex;
+            flex-direction: row;
+            gap: 5px; 
+            z-index: 100;
+        }
+
+        .repair-kit-icon-stock {
+            width: 22px; 
+            height: 22px; 
+            background-color: #dd0000; 
+            border: 1px solid #ff4444;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .repair-kit-icon-stock::before,
+        .repair-kit-icon-stock::after {
+            content: '';
+            position: absolute;
+            background-color: #ffffff;
+        }
+
+        .repair-kit-icon-stock::before {
+            width: 4px; 
+            height: 12px;
+        }
+
+        .repair-kit-icon-stock::after {
+            width: 12px;
+            height: 4px; 
+        }
+
+        .countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ffff00;
+            font-size: 64px; 
+            font-weight: 900;
+            text-shadow: 0 0 25px #ffff00; 
+            z-index: 200;
+        }
+
+        .result-screen, 
+        .controls-screen-content, 
+        .customize-content { 
+            background: rgba(0,0,0,0.92); 
+            border: 2px solid #ffff00;
+            padding: 25px; 
+            border-radius: 12px; 
+            color: #00ff00; 
+            max-width: 90%; 
+            width: auto; 
+            min-width: 400px; 
+            max-height: 90vh; 
+            overflow-y: auto; 
+            box-sizing: border-box;
+            display: flex; 
+            flex-direction: column;
+            align-items: center; 
+        }
+
+        #customizeScreen .customize-content { /* Adjusted for smaller UI */
+            width: 680px; /* Original: 700px */
+            padding-top: 15px; /* Slightly less padding */
+            padding-bottom: 15px;
+        }
+        #gameModeScreen .customize-content {
+            width: 700px; 
+        }
+        #controlsScreen .controls-screen-content,
+        #resultScreen .result-screen {
+            width: 650px; 
+        }
+
+
+        .result-title, .controls-title { 
+            font-size: 28px; 
+            color: #ffff00;
+            text-align: center;
+            margin-bottom: 25px; 
+            width: 100%; 
+        }
+
+        .result-stats, .controls-text { 
+            line-height: 1.9; 
+            font-size: 16px; 
+            text-align: center; 
+            margin-bottom: 20px; 
+            width: 100%; 
+            max-width: 500px; 
+        }
+
+        .controls-text p {
+            margin: 12px 0; 
+        }
+        .controls-text strong {
+            color: #ffff00; 
+        }
+
+        #tankOptionsGrid { 
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; /* Original: 15px */
+            justify-items: stretch; 
+            margin-bottom: 15px; /* Original: 20px */
+            width: 100%; 
+            max-width: 580px; /* Original: 600px */
+        }
+        #gameModeScreen .customize-content .tank-option {
+            width: 80%; 
+            max-width: 450px; 
+            margin-left: auto;  
+            margin-right: auto; 
+        }
+
+
+        .tank-option { 
+            border: 2px solid #00ff00;
+            padding: 12px; /* Original: 15px */
+            box-sizing: border-box; 
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 25, 0, 0.65); 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            min-height: 75px; /* Original: 85px */
+            text-align: left; 
+            border-radius: 5px; 
+            margin-top: 5px; 
+            margin-bottom: 5px;
+        }
+
+        .tank-option:hover {
+            background: rgba(0, 255, 0, 0.2); 
+            box-shadow: 0 0 15px #00ff00; 
+        }
+
+        .tank-option.selected { 
+            background: rgba(0, 255, 0, 0.3); 
+            border-color: #ffff00; 
+            box-shadow: 0 0 20px #ffff00; 
+        }
+
+        .tank-name {
+            font-size: 17px; /* Original: 18px */
+            font-weight: bold;
+            color: #ffff00;
+            margin-bottom: 4px; /* Original: 5px */
+        }
+
+        .tank-description {
+            font-size: 12px; /* Original: 13px */
+            color: #33ff33; 
+            line-height: 1.3; /* Original: 1.4 */
+        }
+
+        .charge-bar { 
+            position: absolute;
+            bottom: 40px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px; 
+            height: 10px; 
+            border: 1px solid #ffff00;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 150;
+            border-radius: 3px; 
+        }
+
+        .charge-fill { 
+            height: 100%;
+            background: linear-gradient(90deg, #ff3333, #ffff66, #66ff66); 
+            width: 0%; 
+            transition: width 0.05s linear; 
+            border-radius: 2px;
+        }
+        /* END OF CSS */
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <!-- Title Screen -->
+        <div id="titleScreen" class="screen active">
+            <div class="title">PANZER TANK TAHK!</div>
+            <button class="menu-item" onclick="showGameModeScreen()">ゲームモード選択</button>
+            <button class="menu-item" onclick="showCustomize()">カスタマイズ</button>
+            <button class="menu-item" onclick="showControlsScreen()">操作方法</button>
+        </div>
+
+        <!-- Game Mode Selection Screen -->
+        <div id="gameModeScreen" class="screen">
+            <div class="customize-content">
+                <div class="title" style="font-size: 36px; margin-bottom: 20px;">ゲームモード選択</div>
+                <div class="tank-option" onclick="startGame('SINGLE_MATCH')">
+                    <div class="tank-name">シングルマッチ</div>
+                    <div class="tank-description">3から4両の敵戦車と戦うモード</div>
+                </div>
+                <div class="tank-option" onclick="startGame('ARENA')">
+                    <div class="tank-name">アリーナ</div>
+                    <div class="tank-description">ウェーブ制で出現する敵を殲滅し続けるサバイバルモード</div>
+                </div>
+                <div class="tank-option" onclick="startGame('RANKED_MATCH')">
+                    <div class="tank-name">ボスマッチ</div>
+                    <div class="tank-description">強化されたボス戦車(4種からランダム)とのタイマン戦・アーマーシステムあり</div>
+                </div>
+                <button class="menu-item" style="margin-top:20px;" onclick="backToTitle()">タイトルに戻る</button>
+            </div>
+        </div>
+        
+        <div id="gameScreen" class="screen">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+            <div class="hud">
+                <div>HP: <span id="playerHP">100</span></div>
+                <div id="armorDisplay" style="display:none;">アーマー: <span id="playerArmor">0</span></div>
+                <div>弾薬: <span id="ammoLeft">∞</span></div> 
+                <div id="waveDisplay" style="display:none;">ウェーブ: <span id="currentWave">1</span></div>
+                <div>敵残: <span id="enemyCount">3</span></div>
+                <div>キット: <span id="repairKitCount">0</span></div>
+            </div>
+            <div id="repairKitStockDisplay"></div>
+            <div class="countdown" id="countdown" style="display: none;"></div>
+            <div class="charge-bar" id="chargeBar" style="display: none;">
+                <div class="charge-fill" id="chargeFill"></div>
+            </div>
+        </div>
+        
+        <div id="resultScreen" class="screen">
+            <div class="result-screen">
+                <div class="result-title" id="resultTitle">勝利！</div>
+                <div class="result-stats" id="resultStats"></div>
+                <button class="menu-item" onclick="backToTitle()">タイトルに戻る</button>
+            </div>
+        </div>
+        
+        <div id="customizeScreen" class="screen">
+            <div class="customize-content">
+                <div class="title" style="font-size: 36px; margin-bottom: 15px;">カスタマイズ</div>
+                <div style="color: #00ff00; margin-bottom:15px; text-align: center; font-size: 15px;">
+                    戦車タイプを選択してください
+                </div>
+                <div id="tankOptionsGrid"> 
+                    <div class="tank-option" onclick="selectTank('BALANCE')" id="balance-option">
+                        <div class="tank-name">BALANCE</div><div class="tank-description">標準仕様の万能戦車</div></div>
+                    <div class="tank-option" onclick="selectTank('SPEED')" id="speed-option">
+                        <div class="tank-name">SPEED</div><div class="tank-description">連射型・高速連射・低威力</div></div>
+                    <div class="tank-option" onclick="selectTank('POWER')" id="power-option">
+                        <div class="tank-name">POWER</div><div class="tank-description">チャージ式・超高威力</div></div>
+                    <div class="tank-option" onclick="selectTank('RAKETA')" id="raketa-option">
+                        <div class="tank-name">RAKETA</div><div class="tank-description">10連装ロケット・斉射後リロード</div></div>
+                    <div class="tank-option" onclick="selectTank('NUCLEAR')" id="nuclear-option">
+                        <div class="tank-name">NUCLEAR</div><div class="tank-description">戦術核(3発)・広範囲爆発</div></div>
+                    <div class="tank-option" onclick="selectTank('AUTOMATON')" id="automaton-option">
+                        <div class="tank-name">AUTOMATON</div><div class="tank-description">クリップ装填式・6発連射可能</div></div>
+                </div>
+                <div style="margin-top: 15px; color: #ffff00; text-align: center; font-size: 15px;">
+                    選択中: <span id="selectedTankDisplay">BALANCE</span>
+                </div>
+                <button class="menu-item" style="margin-top:15px;" onclick="showGameModeScreen()">戻る</button>
+            </div>
+        </div>
+
+        <div id="controlsScreen" class="screen">
+            <div class="controls-screen-content">
+                <div class="controls-title">操作方法</div>
+                <div class="controls-text">
+                    <p><strong>W, A, S, D</strong> / <strong>矢印キー</strong>: 移動</p>
+                    <p><strong>マウス</strong>: 照準</p>
+                    <p><strong>左クリック</strong>: 発射 (SPEED型は押しっぱなしで連射)</p>
+                    <p><strong>R キー</strong>: リペアキット使用</p>
+                    <p style="font-size:12px; opacity: 0.7;">何か隠されているかも...？</p>
+                </div>
+                <button class="menu-item" onclick="backToTitle()">戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // START OF JAVASCRIPT
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = 'title';
+        let player = null;
+        let enemies = [];
+        let bullets = [];
+        let walls = [];
+        let repairKits = [];
+        let activeExplosions = []; 
+
+        let countdownTimer = 0;
+        let gameStarted = false;
+        let selectedTankType = 'BALANCE';
+        let selectedGameMode = 'SINGLE_MATCH';
+
+        let gameStats = { shotsFired: 0, shotsHit: 0, enemiesKilled: 0, damageReceived: 0 };
+        let numRepairKitsToSpawn = 1; 
+
+        const EXPLOSION_DURATION = 60; 
+        const END_GAME_DELAY = 2000;
+
+        let currentWave = 1;
+        const WAVE_ENEMY_COUNT_MIN_BASE = 2; 
+        const WAVE_ENEMY_COUNT_MAX_BASE = 3; 
+        let enemiesThisWave = 0;
+        let enemiesSpawnedThisWave = 0;
+
+        const RANKED_BOSS_ARMOR_BASE = 250; 
+        const RANKED_BOSS_HP_BASE = 200;    
+        const RANKED_BOSS_SPEED_MULTIPLIER = 1.15;
+        const RANKED_BOSS_DAMAGE_MULTIPLIER = 1.25; 
+        const RANKED_BOSS_SHOOT_COOLDOWN_MULTIPLIER = 0.75; 
+
+        const NUCLEAR_EXPLOSION_DAMAGE = 180; 
+        const NUCLEAR_FRAGMENT_DAMAGE = 35;   
+        const NUCLEAR_EXPLOSION_MAX_RADIUS = 150; 
+        const NUCLEAR_EXPLOSION_DURATION_FRAMES = 90;
+
+        let isMouseDown = false;
+
+        // Konami Command
+        const konamiCode = ['arrowup', 'arrowup', 'arrowdown', 'arrowdown', 'arrowleft', 'arrowright', 'arrowleft', 'arrowright', 'b', 'a'];
+        let konamiCodeProgress = 0;
+
+
+        class Tank {
+            constructor(x, y, isPlayer = false, tankType = 'BALANCE', gameMode = 'SINGLE_MATCH', bossVariant = null) {
+                this.x = x; this.y = y;
+                this.angle = 0; this.targetAngle = 0; this.rotationSpeed = Math.PI / 25; 
+                this.turretAngle = 0;
+                this.isPlayer = isPlayer; this.size = 30; 
+                this.lastShot = 0; 
+                this.aiState = 'approach'; this.aiTimer = 0; this.flashTime = 0;
+                this.tankType = this.isPlayer ? tankType : (gameMode === 'RANKED_MATCH' || gameMode === 'OMEGA_BOSS_FIGHT' ? 'BALANCE' : 'BALANCE');
+                this.gameMode = gameMode;
+                this.bossVariant = bossVariant;
+
+                this.isCharging = false; this.chargeStartTime = 0; this.chargeDuration = 1000;
+                this.reloadTimer = 0; this.isReloading = false;
+
+                this.bulletsInBurstLeft = 0; this.isFiringBurst = false; this.burstFireTimer = 0;
+                this.bulletsInClip = 0;
+                this.ammo = 0;
+
+                this.armor = 0; this.maxArmor = 0; this.armorFlashTime = 0;
+
+                if (this.isPlayer) this.repairKitStock = [];
+                this.isHealing = false; this.healingEffectTimer = 0; this.healingEffectDuration = 30;
+                this.isExploding = false; this.explosionTimer = 0; this.isDestroyed = false;
+
+                // Sniper Boss properties (also used by OMEGA & ORBITAL)
+                this.sniperLaserActive = false;
+                this.sniperChargeTimer = 0; 
+                this.sniperLockTimer = 0;   
+                this.sniperCooldownTimer = 0; 
+                this.sniperTargetAngle = 0;
+                this.sniperSubShotCooldownTimer = 0; 
+                this.sniperSubShotVolleyCount = 0;   
+                this.isFiringSniperSubVolley = false;    
+
+                // Barrage Boss properties (also used by OMEGA)
+                this.barrageActive = false;
+                this.barrageDurationTimer = 0; 
+                this.barrageCooldownTimer = 0; 
+                this.barrageLastSubShot = 0; 
+                this.barrageFixedAngle = 0;  
+                this.barrageSubShotAngleOffset = 0; 
+
+                // Guided Missile Boss properties (also used by OMEGA)
+                this.missileBarrageCount = 30;         
+                this.missileBarrageTotalTime = 1000;   
+                this.missileBarrageInterval = this.missileBarrageTotalTime / this.missileBarrageCount; 
+                this.missilesToFireInBarrage = 0;      
+                this.lastBarrageMissileTime = 0;       
+                this.missileBarrageCooldownTime = (4 + Math.random() * 3) * 60; 
+                this.missileBarrageCooldownTimer = 0;  
+                this.missileVolleySize = 0; 
+
+                // OMEGA Boss specific properties
+                this.omegaAttackPhase = 'idle'; 
+                this.omegaSubAttackTimer = 0;   
+                this.omegaAttackCooldowns = { barrage: 0, rapidNormal: 0, guidedMissile: 0, sniper: 0 };
+                this.omegaLastRapidNormalShotTime = 0;
+                this.omegaMissilesInVolley = 0;
+                this.omegaIsFiringBarrage = false;
+                this.omegaBarrageShotsFired = 0;
+
+                // ORBITAL Boss specific properties
+                this.orbiters = []; // Array to hold Orbiter instances
+
+
+                this.setTankProperties();
+
+                if (!this.isPlayer && (this.gameMode === 'RANKED_MATCH' || this.gameMode === 'OMEGA_BOSS_FIGHT')) {
+                    this.makeRankedBoss(); 
+                }
+            }
+
+            setTankProperties() {
+                this.maxHP = 100;
+                this.isReloading = false; this.reloadTimer = 0;
+                this.isFiringBurst = false; this.bulletsInBurstLeft = 0; this.burstFireTimer = 0;
+                this.armor = 0; this.maxArmor = 0;
+
+                let baseSpeed = 1.8;
+                let baseBulletDamage = 22;
+                let baseBulletSpeed = 5.5;
+
+                switch (this.tankType) {
+                    case 'BALANCE':
+                        this.speed = baseSpeed; this.shootCooldown = 500; this.bulletDamage = baseBulletDamage; this.bulletSpeed = baseBulletSpeed;
+                        break;
+                    case 'SPEED': 
+                        this.speed = baseSpeed * 1.75; 
+                        this.shootCooldown = 90; 
+                        this.bulletDamage = baseBulletDamage * 0.4; 
+                        this.bulletSpeed = baseBulletSpeed * 0.6;
+                        break;
+                    case 'POWER':
+                        this.speed = baseSpeed * 0.75; this.shootCooldown = 0; this.bulletDamage = baseBulletDamage * 5; this.bulletSpeed = baseBulletSpeed * 3.0;
+                        this.chargeDuration = 1000;
+                        break;
+                    case 'RAKETA': 
+                        this.speed = baseSpeed * 0.9; this.shootCooldown = 0; 
+                        this.bulletDamage = baseBulletDamage * 1.0; 
+                        this.bulletSpeed = baseBulletSpeed * 0.75;  
+                        if(this.isPlayer) { 
+                            this.bulletDamage = baseBulletDamage * 3.5;
+                            this.bulletSpeed = baseBulletSpeed * 1.3;
+                            this.burstSize = 10; this.burstInterval = 100; this.reloadTime = 10000;
+                        } else if (this.bossVariant === 'GUIDED_MISSILE' || this.bossVariant === 'OMEGA') { 
+                            this.bulletDamage = (this.bossVariant === 'OMEGA') ? 18 : 15; 
+                            this.bulletSpeed = (this.bossVariant === 'OMEGA') ? 4.2 : 3.8; 
+                        }
+                        break;
+                    case 'NUCLEAR':
+                        this.speed = baseSpeed * 0.65; this.shootCooldown = 1200; this.bulletDamage = baseBulletDamage * 2.5; this.bulletSpeed = baseBulletSpeed * 0.8;
+                        this.maxAmmo = 3; this.ammo = this.maxAmmo; this.reloadTime = 15000;
+                        break;
+                    case 'AUTOMATON':
+                        this.speed = baseSpeed * 0.95; this.shootCooldown = 115; this.bulletDamage = baseBulletDamage * 1.3; this.bulletSpeed = baseBulletSpeed * 1.5;
+                        this.clipSize = 6; this.bulletsInClip = this.clipSize; this.reloadTime = 4000;
+                        break;
+                    default:
+                        this.speed = baseSpeed; this.shootCooldown = 500; this.bulletDamage = baseBulletDamage; this.bulletSpeed = baseBulletSpeed;
+                }
+                this.hp = this.maxHP;
+            }
+
+            makeRankedBoss() { 
+                if (this.bossVariant === 'OMEGA') {
+                    this.tankType = 'BALANCE'; 
+                    this.setTankProperties();  
+                    this.maxHP = RANKED_BOSS_HP_BASE * 3.5; 
+                    this.hp = this.maxHP;
+                    this.maxArmor = RANKED_BOSS_ARMOR_BASE * 2.5; 
+                    this.armor = this.maxArmor;
+                    this.speed = RANKED_BOSS_SPEED_MULTIPLIER * 1.05; 
+                    this.size *= 2.5; 
+                    this.aiState = 'omega_idle'; 
+                    this.omegaAttackCooldowns = { barrage: 0, rapidNormal: 0, guidedMissile: 0, sniper: 0 }; 
+                    console.log("OMEGA Hidden Boss Created:", this);
+                    return; 
+                }
+                if (this.bossVariant === 'ORBITAL') {
+                    this.tankType = 'BALANCE'; // Orbital boss itself doesn't shoot
+                    this.setTankProperties();
+                    this.maxHP = RANKED_BOSS_HP_BASE * 5.0; // Extremely high HP
+                    this.hp = this.maxHP;
+                    this.maxArmor = RANKED_BOSS_ARMOR_BASE * 4.0; // Extremely high Armor
+                    this.armor = this.maxArmor;
+                    this.speed = RANKED_BOSS_SPEED_MULTIPLIER * 0.7; // Slower, to make it "flee" effectively
+                    this.aiState = 'orbital_flee'; // Special AI state for fleeing
+                    this.orbiters = [];
+                    for (let i = 0; i < 4; i++) {
+                        // Spawn orbiters around the boss initially
+                        const angle = (Math.PI * 2 / 4) * i + Math.random() * 0.5 - 0.25;
+                        const spawnDist = this.size * 1.2;
+                        const orbiterX = this.x + Math.cos(angle) * spawnDist;
+                        const orbiterY = this.y + Math.sin(angle) * spawnDist;
+                        this.orbiters.push(new Orbiter(orbiterX, orbiterY, this));
+                    }
+                    console.log("ORBITAL Boss Created with Orbiters:", this);
+                    return;
+                }
+
+
+                // Existing boss variants
+                switch (this.bossVariant) {
+                    case 'GUIDED_MISSILE':
+                        this.tankType = 'RAKETA'; 
+                        this.setTankProperties(); 
+                        this.maxHP = RANKED_BOSS_HP_BASE * 1.2;
+                        this.hp = this.maxHP;
+                        this.maxArmor = RANKED_BOSS_ARMOR_BASE * 1.0;
+                        this.armor = this.maxArmor;
+                        this.speed *= RANKED_BOSS_SPEED_MULTIPLIER * 0.85; 
+                        this.aiState = 'missile_idle'; 
+                        this.missileBarrageCooldownTime = (4 + Math.random() * 2) * 60; 
+                        this.missileBarrageCooldownTimer = Math.random() * 60; 
+                        console.log("GUIDED_MISSILE Boss Created for Barrage Attack:", this);
+                        break;
+                    case 'SNIPER':
+                        this.tankType = 'BALANCE'; 
+                        this.setTankProperties();
+                        this.maxHP = RANKED_BOSS_HP_BASE * 1.1;
+                        this.hp = this.maxHP;
+                        this.maxArmor = RANKED_BOSS_ARMOR_BASE * 0.8;
+                        this.armor = this.maxArmor;
+                        this.speed *= RANKED_BOSS_SPEED_MULTIPLIER * 0.9;
+                        this.bulletDamage = 10; 
+                        this.bulletSpeed = 4.5; 
+                        this.shootCooldown = 400; 
+                        this.aiState = 'sniper_idle';
+                        this.sniperSubShotCooldownTimer = Math.random() * 60; 
+                        console.log("SNIPER Boss Created:", this);
+                        break;
+                    case 'BARRAGE':
+                        this.tankType = 'BALANCE'; 
+                        this.setTankProperties();
+                        this.maxHP = RANKED_BOSS_HP_BASE * 1.3;
+                        this.hp = this.maxHP;
+                        this.maxArmor = RANKED_BOSS_ARMOR_BASE * 1.2;
+                        this.armor = this.maxArmor;
+                        this.speed *= RANKED_BOSS_SPEED_MULTIPLIER * 1.0;
+                        this.shootCooldown = 200; 
+                        this.aiState = 'barrage_idle';
+                        console.log("BARRAGE Boss Created:", this);
+                        break;
+                    default: 
+                        console.warn("Unknown boss variant for ranked match, defaulting to generic boss stats", this.bossVariant);
+                        this.tankType = 'BALANCE';
+                        this.setTankProperties();
+                        this.maxHP = RANKED_BOSS_HP_BASE * 1.4; 
+                        this.hp = this.maxHP;
+                        this.maxArmor = RANKED_BOSS_ARMOR_BASE * 1.3;
+                        this.armor = this.maxArmor;
+                        this.speed *= RANKED_BOSS_SPEED_MULTIPLIER;
+                        this.bulletDamage = 25; 
+                        this.shootCooldown = 400; 
+                        this.aiState = 'aggressive_boss'; 
+                        break;
+                }
+                if (this.bossVariant !== 'OMEGA' && this.bossVariant !== 'ORBITAL') this.size *= 1.25; // Standard boss size increase
+            }
+
+
+            update() { 
+                if (this.isDestroyed) {
+                     // If orbital boss is destroyed, destroy its orbiters too
+                    if (this.bossVariant === 'ORBITAL') {
+                        this.orbiters.forEach(orb => orb.destroy());
+                        this.orbiters = [];
+                    }
+                    return;
+                }
+                if (this.isExploding) {
+                    this.explosionTimer++;
+                    if (this.explosionTimer >= EXPLOSION_DURATION) {
+                        this.isDestroyed = true;
+                        // If orbital boss is destroyed (after explosion), destroy its orbiters too
+                        if (this.bossVariant === 'ORBITAL') {
+                            this.orbiters.forEach(orb => orb.destroy());
+                            this.orbiters = [];
+                        }
+                    }
+                    return;
+                }
+
+                if (this.angle !== this.targetAngle) {
+                    let diff = this.targetAngle - this.angle;
+                    while (diff < -Math.PI) diff += 2 * Math.PI;
+                    while (diff > Math.PI) diff -= 2 * Math.PI;
+                    if (Math.abs(diff) < this.rotationSpeed) this.angle = this.targetAngle;
+                    else this.angle += Math.sign(diff) * this.rotationSpeed;
+                    this.angle = (this.angle + 2 * Math.PI) % (2 * Math.PI);
+                }
+
+                if (!this.isPlayer) {
+                    if (!(gameState === 'ending' || !gameStarted || this.isExploding || (player && player.isDestroyed))) {
+                        this.updateAI();
+                    }
+                }
+                
+                if (this.flashTime > 0) this.flashTime--;
+                if (this.armorFlashTime > 0) this.armorFlashTime--;
+                if (this.isHealing) {
+                    this.healingEffectTimer--;
+                    if (this.healingEffectTimer <= 0) this.isHealing = false;
+                }
+
+                if (this.isPlayer && this.tankType === 'POWER' && this.isCharging) {
+                    const chargeProgress = (Date.now() - this.chargeStartTime) / this.chargeDuration;
+                    const chargeFill = document.getElementById('chargeFill');
+                    if (chargeProgress < 1) chargeFill.style.width = (chargeProgress * 100) + '%';
+                    else {
+                        chargeFill.style.width = '100%'; this.fireChargedShot(); this.isCharging = false;
+                        setTimeout(() => { if (!this.isCharging) document.getElementById('chargeBar').style.display = 'none'; }, 50);
+                    }
+                }
+
+                if (this.isReloading) { 
+                    this.reloadTimer -= (1000 / 60);
+                    if (this.reloadTimer <= 0) {
+                        this.isReloading = false; this.reloadTimer = 0;
+                        switch (this.tankType) {
+                            case 'NUCLEAR':
+                                if (this.ammo < this.maxAmmo) this.ammo++;
+                                if (this.isPlayer && this.ammo < this.maxAmmo) { 
+                                    this.isReloading = true; this.reloadTimer = this.reloadTime;
+                                }
+                                break;
+                            case 'AUTOMATON': this.bulletsInClip = this.clipSize; break;
+                        }
+                    }
+                }
+
+                if (this.isFiringBurst && this.tankType === 'RAKETA' && this.isPlayer) { 
+                    this.burstFireTimer -= (1000 / 60);
+                    if (this.burstFireTimer <= 0 && this.bulletsInBurstLeft > 0) {
+                        this.fireSingleRaketa(); this.bulletsInBurstLeft--;
+                        this.burstFireTimer = this.burstInterval;
+                        if (this.bulletsInBurstLeft === 0) {
+                            this.isFiringBurst = false; 
+                            this.isReloading = true; 
+                            this.reloadTimer = this.reloadTime;
+                        }
+                    }
+                }
+                // Update orbiters if this is an ORBITAL boss
+                if (this.bossVariant === 'ORBITAL') {
+                    for (let i = this.orbiters.length - 1; i >= 0; i--) {
+                        if (this.orbiters[i].update()) { // update returns true if orbiter is destroyed
+                            this.orbiters.splice(i, 1);
+                        }
+                    }
+                }
+            }
+
+            fireSingleRaketa() { 
+                const bullet = new Bullet(
+                    this.x + Math.cos(this.turretAngle) * (this.size * 0.7), 
+                    this.y + Math.sin(this.turretAngle) * (this.size * 0.7),
+                    Math.cos(this.turretAngle) * this.bulletSpeed, Math.sin(this.turretAngle) * this.bulletSpeed,
+                    this.isPlayer, this.bulletDamage, false, 'RAKETA'
+                );
+                bullets.push(bullet);
+                if (this.isPlayer) gameStats.shotsFired++;
+            }
+
+            startCharging() {
+                if (this.tankType !== 'POWER' || this.isCharging || !this.isPlayer) return;
+                this.isCharging = true; this.chargeStartTime = Date.now();
+                document.getElementById('chargeBar').style.display = 'block';
+                document.getElementById('chargeFill').style.width = '0%';
+            }
+
+            fireChargedShot() {
+                const bullet = new Bullet(
+                    this.x + Math.cos(this.turretAngle) * (this.size * 0.7),
+                    this.y + Math.sin(this.turretAngle) * (this.size * 0.7),
+                    Math.cos(this.turretAngle) * this.bulletSpeed, Math.sin(this.turretAngle) * this.bulletSpeed,
+                    this.isPlayer, this.bulletDamage, true, 'STANDARD'
+                );
+                bullets.push(bullet);
+                if (this.isPlayer) gameStats.shotsFired++;
+            }
+
+            updateAI() { 
+                if (!gameStarted || !player || this.isExploding || gameState === 'ending' || player.isDestroyed) return;
+            
+                const dxPlayer = player.x - this.x; 
+                const dyPlayer = player.y - this.y;
+                const distanceToPlayer = Math.sqrt(dxPlayer * dxPlayer + dyPlayer * dyPlayer);
+                let targetTurretAngle = Math.atan2(dyPlayer, dxPlayer);
+
+                // --- ORBITAL Boss AI ---
+                if (this.bossVariant === 'ORBITAL') {
+                    if (this.aiState === 'orbital_flee') {
+                        // Actively move away from the player
+                        this.targetAngle = targetTurretAngle + Math.PI; // Flee direction
+                        const moveX = Math.cos(this.angle) * this.speed; // Move in current body direction
+                        const newPlayerX = this.x + moveX;
+                        const moveY = Math.sin(this.angle) * this.speed;
+                        const newPlayerY = this.y + moveY;
+
+                        if (!this.checkWallCollision(newPlayerX, this.y)) this.x = newPlayerX;
+                        if (!this.checkWallCollision(this.x, newPlayerY)) this.y = newPlayerY;
+
+                        // Keep boss within bounds
+                        this.x = Math.max(this.size / 2, Math.min(canvas.width - this.size / 2, this.x));
+                        this.y = Math.max(this.size / 2, Math.min(canvas.height - this.size / 2, this.y));
+                    }
+                    // Orbital boss itself does not shoot. Orbiters handle attacks.
+                    return; // End ORBITAL AI
+                }
+
+
+                // --- OMEGA Boss AI ---
+                if (this.bossVariant === 'OMEGA') {
+                    this.turretAngle = targetTurretAngle; 
+
+                    for (let attack in this.omegaAttackCooldowns) {
+                        if (this.omegaAttackCooldowns[attack] > 0) {
+                            this.omegaAttackCooldowns[attack]--;
+                        }
+                    }
+
+                    let moveX = 0, moveY = 0;
+                    if (distanceToPlayer > 400) {
+                        moveX = Math.cos(targetTurretAngle) * this.speed * 0.6;
+                        moveY = Math.sin(targetTurretAngle) * this.speed * 0.6;
+                    } else if (distanceToPlayer < 250) {
+                        moveX = -Math.cos(targetTurretAngle) * this.speed * 0.5;
+                        moveY = -Math.sin(targetTurretAngle) * this.speed * 0.5;
+                    } else if (Math.random() < 0.01) { 
+                        const strafeAngle = targetTurretAngle + (Math.random() < 0.5 ? Math.PI / 2 : -Math.PI / 2);
+                        moveX = Math.cos(strafeAngle) * this.speed * 0.4;
+                        moveY = Math.sin(strafeAngle) * this.speed * 0.4;
+                    }
+                    if (moveX !== 0 || moveY !== 0) this.targetAngle = Math.atan2(moveY, moveX);
+                    const newX = this.x + Math.cos(this.angle) * this.speed * 0.8;
+                    const newY = this.y + Math.sin(this.angle) * this.speed * 0.8;
+                    if (!this.checkWallCollision(newX, this.y)) this.x = newX;
+                    if (!this.checkWallCollision(this.x, newY)) this.y = newY;
+
+
+                    if (this.omegaAttackPhase === 'idle') {
+                        const availableAttacks = [];
+                        if (this.omegaAttackCooldowns.barrage <= 0) availableAttacks.push('barrage');
+                        if (this.omegaAttackCooldowns.rapidNormal <= 0) availableAttacks.push('rapidNormal');
+                        if (this.omegaAttackCooldowns.guidedMissile <= 0) availableAttacks.push('guidedMissile');
+                        if (this.omegaAttackCooldowns.sniper <= 0) availableAttacks.push('sniper');
+
+                        if (availableAttacks.length > 0) {
+                            const nextAttack = availableAttacks[Math.floor(Math.random() * availableAttacks.length)];
+                            this.omegaAttackPhase = nextAttack;
+                            this.omegaSubAttackTimer = 0; 
+
+                            if (nextAttack === 'sniper') {
+                                this.aiState = 'omega_sniper_charging'; 
+                                this.sniperChargeTimer = 0.8 * 60; 
+                                this.sniperLaserActive = true;
+                            } else if (nextAttack === 'barrage') {
+                                this.omegaIsFiringBarrage = true;
+                                this.omegaBarrageShotsFired = 0;
+                                this.barrageFixedAngle = this.turretAngle; 
+                                this.barrageSubShotAngleOffset = (Math.random() - 0.5) * 0.2;
+                                this.barrageLastSubShot = Date.now();
+                            } else if (nextAttack === 'guidedMissile') {
+                                this.omegaMissilesInVolley = 3 + Math.floor(Math.random() * 2); 
+                            }
+                        }
+                    } 
+                    else if (this.omegaAttackPhase === 'barrage') {
+                        if (this.omegaIsFiringBarrage) {
+                            this.turretAngle = this.barrageFixedAngle; 
+                             if (Date.now() - this.barrageLastSubShot > 60) { 
+                                this.barrageSubShotAngleOffset += (Math.random() - 0.5) * 0.1;
+                                this.barrageSubShotAngleOffset = Math.max(-Math.PI/5, Math.min(Math.PI/5, this.barrageSubShotAngleOffset));
+                                const baseSpread = Math.PI / 7;
+
+                                this.shoot('OMEGA_BARRAGE_SUB', this.barrageFixedAngle + this.barrageSubShotAngleOffset + (Math.random()-0.5) * 0.2);
+                                this.shoot('OMEGA_BARRAGE_SUB', this.barrageFixedAngle - baseSpread * 0.7 + this.barrageSubShotAngleOffset + (Math.random()-0.5) * 0.2);
+                                this.shoot('OMEGA_BARRAGE_SUB', this.barrageFixedAngle + baseSpread * 0.7 + this.barrageSubShotAngleOffset + (Math.random()-0.5) * 0.2);
+                                this.barrageLastSubShot = Date.now();
+                                this.omegaBarrageShotsFired++;
+                            }
+                            if (this.omegaBarrageShotsFired >= 25) { 
+                                this.omegaIsFiringBarrage = false;
+                                this.omegaAttackCooldowns.barrage = 5 * 60; 
+                                this.omegaAttackPhase = 'idle';
+                            }
+                        }
+                    } else if (this.omegaAttackPhase === 'rapidNormal') {
+                        const RAPID_NORMAL_INTERVAL = 80; 
+                        const RAPID_NORMAL_VOLLEY_SIZE = 7;
+                        if (Date.now() - this.omegaLastRapidNormalShotTime > RAPID_NORMAL_INTERVAL) {
+                            this.shoot('OMEGA_RAPID_NORMAL');
+                            this.omegaLastRapidNormalShotTime = Date.now();
+                            this.omegaSubAttackTimer++;
+                        }
+                        if (this.omegaSubAttackTimer >= RAPID_NORMAL_VOLLEY_SIZE) {
+                            this.omegaAttackCooldowns.rapidNormal = 3 * 60; 
+                            this.omegaAttackPhase = 'idle';
+                        }
+                    } else if (this.omegaAttackPhase === 'guidedMissile') {
+                        if (this.omegaMissilesInVolley > 0 && this.omegaSubAttackTimer % 20 === 0) { 
+                            this.shoot('OMEGA_GUIDED_MISSILE_AI', this.turretAngle + (Math.random() - 0.5) * 0.4);
+                            this.omegaMissilesInVolley--;
+                        }
+                        this.omegaSubAttackTimer++;
+                        if (this.omegaMissilesInVolley === 0) {
+                            this.omegaAttackCooldowns.guidedMissile = 4 * 60; 
+                            this.omegaAttackPhase = 'idle';
+                        }
+                    } else if (this.omegaAttackPhase === 'sniper') { 
+                        if (this.aiState === 'omega_sniper_charging') {
+                            this.sniperChargeTimer--;
+                            if (this.sniperChargeTimer <= 0) {
+                                this.aiState = 'omega_sniper_locking';
+                                this.sniperLockTimer = 0.2 * 60; 
+                                this.sniperTargetAngle = this.turretAngle;
+                            }
+                        } else if (this.aiState === 'omega_sniper_locking') {
+                            this.turretAngle = this.sniperTargetAngle;
+                            this.sniperLockTimer--;
+                            if (this.sniperLockTimer <= 0) {
+                                this.shoot('OMEGA_SNIPER_SHOT');
+                                this.sniperLaserActive = false;
+                                this.omegaAttackCooldowns.sniper = 3.5 * 60; 
+                                this.omegaAttackPhase = 'idle';
+                                this.aiState = 'omega_idle'; 
+                            }
+                        }
+                    }
+                    this.x = Math.max(this.size / 2, Math.min(canvas.width - this.size / 2, this.x));
+                    this.y = Math.max(this.size / 2, Math.min(canvas.height - this.size / 2, this.y));
+                    return; 
+                }
+
+
+                // --- Guided Missile Boss AI (Original) ---
+                if (this.bossVariant === 'GUIDED_MISSILE') {
+                    this.turretAngle = targetTurretAngle; 
+                    if (this.aiState === 'missile_idle') {
+                        let moveX = 0, moveY = 0;
+                        if (distanceToPlayer > 350) { 
+                            moveX = Math.cos(targetTurretAngle) * this.speed * 0.6;
+                            moveY = Math.sin(targetTurretAngle) * this.speed * 0.6;
+                        } else if (distanceToPlayer < 250) {
+                            moveX = -Math.cos(targetTurretAngle) * this.speed * 0.4;
+                            moveY = -Math.sin(targetTurretAngle) * this.speed * 0.4;
+                        }
+                        if (moveX !== 0 || moveY !== 0) this.targetAngle = Math.atan2(moveY, moveX);
+                        const newX = this.x + Math.cos(this.angle) * this.speed * 0.5; 
+                        const newY = this.y + Math.sin(this.angle) * this.speed * 0.5;
+
+                        if (!this.checkWallCollision(newX, this.y)) this.x = newX;
+                        if (!this.checkWallCollision(this.x, newY)) this.y = newY;
+                        
+                        if (this.missileBarrageCooldownTimer <= 0) {
+                            this.aiState = 'missile_barrage_windup';
+                            this.aiTimer = 30; 
+                        } else {
+                            this.missileBarrageCooldownTimer--;
+                        }
+                    } else if (this.aiState === 'missile_barrage_windup') {
+                        this.aiTimer--;
+                        if (this.aiTimer <= 0) {
+                            this.aiState = 'missile_barrage_firing';
+                            this.missilesToFireInBarrage = this.missileBarrageCount;
+                            this.lastBarrageMissileTime = Date.now(); 
+                        }
+                    } else if (this.aiState === 'missile_barrage_firing') {
+                        let moveX = Math.cos(this.angle + Math.PI/2) * this.speed * 0.2; 
+                        let moveY = Math.sin(this.angle + Math.PI/2) * this.speed * 0.2;
+                        const newX = this.x + moveX; const newY = this.y + moveY;
+                        if (!this.checkWallCollision(newX, this.y)) this.x = newX;
+                        if (!this.checkWallCollision(this.x, newY)) this.y = newY;
+
+                        if (this.missilesToFireInBarrage > 0 && 
+                            (Date.now() - this.lastBarrageMissileTime >= this.missileBarrageInterval || this.missilesToFireInBarrage === this.missileBarrageCount) ) {
+                            const randomAngle = Math.random() * Math.PI * 2; 
+                            this.shoot('GUIDED_MISSILE_AI', randomAngle); 
+                            this.missilesToFireInBarrage--;
+                            this.lastBarrageMissileTime = Date.now();
+                        }
+                        if (this.missilesToFireInBarrage === 0) {
+                            this.aiState = 'missile_cooldown';
+                            this.missileBarrageCooldownTimer = this.missileBarrageCooldownTime;
+                        }
+                    } else if (this.aiState === 'missile_cooldown') {
+                         this.missileBarrageCooldownTimer--;
+                         if(this.missileBarrageCooldownTimer <= 0) {
+                             this.aiState = 'missile_idle';
+                         }
+                    }
+                    
+                    this.x = Math.max(this.size / 2, Math.min(canvas.width - this.size / 2, this.x));
+                    this.y = Math.max(this.size / 2, Math.min(canvas.height - this.size / 2, this.y));
+                    return; 
+                }
+
+                // --- Sniper Boss AI (Original) ---
+                if (this.bossVariant === 'SNIPER') {
+                    const SNIPER_CHARGE_DURATION_FRAMES = 1 * 60;   
+                    const SNIPER_LOCK_DURATION_FRAMES = 0.3 * 60; 
+                    const SNIPER_COOLDOWN_DURATION_FRAMES = 1; 
+
+                    const SNIPER_SUB_SHOT_COOLDOWN_BASE = 2.5 * 60; 
+                    const SNIPER_SUB_SHOTS_PER_VOLLEY = 5;          
+                    const SNIPER_SUB_SHOT_VOLLEY_INTERVAL = 8;     
+            
+                    this.turretAngle = targetTurretAngle; 
+            
+                    if (this.aiState === 'sniper_idle') {
+                        this.aiTimer++;
+                        let moveX = 0, moveY = 0;
+                        if (distanceToPlayer > 350) { 
+                            moveX = Math.cos(targetTurretAngle) * this.speed * 0.6;
+                            moveY = Math.sin(targetTurretAngle) * this.speed * 0.6;
+                        } else if (distanceToPlayer < 250) { 
+                            moveX = -Math.cos(targetTurretAngle) * this.speed * 0.4;
+                            moveY = -Math.sin(targetTurretAngle) * this.speed * 0.4;
+                        }
+                        if (moveX !== 0 || moveY !== 0) this.targetAngle = Math.atan2(moveY, moveX);
+                        const newX = this.x + Math.cos(this.angle)*this.speed*0.7; 
+                        const newY = this.y + Math.sin(this.angle)*this.speed*0.7;
+                        if (!this.checkWallCollision(newX, this.y)) this.x = newX;
+                        if (!this.checkWallCollision(this.x, newY)) this.y = newY;
+            
+                        if (Date.now() - this.lastShot > this.shootCooldown && distanceToPlayer < 400 && !this.isFiringSniperSubVolley) {
+                            this.shoot('SNIPER_NORMAL'); 
+                        }
+
+                        if (this.sniperSubShotCooldownTimer <= 0 && !this.isFiringSniperSubVolley && Math.random() < 0.025 && distanceToPlayer < 450) {
+                            this.isFiringSniperSubVolley = true;
+                            this.sniperSubShotVolleyCount = 0;
+                            this.aiTimer = 0; 
+                        }
+
+                        if (this.isFiringSniperSubVolley) {
+                            if (this.aiTimer % SNIPER_SUB_SHOT_VOLLEY_INTERVAL === 0) {
+                                this.shoot('SNIPER_BARRAGE_SUB'); 
+                                this.sniperSubShotVolleyCount++;
+                            }
+                            if (this.sniperSubShotVolleyCount >= SNIPER_SUB_SHOTS_PER_VOLLEY) {
+                                this.isFiringSniperSubVolley = false;
+                                this.sniperSubShotCooldownTimer = SNIPER_SUB_SHOT_COOLDOWN_BASE + (Math.random() * 30); 
+                            }
+                        }
+                        
+                        if (this.sniperCooldownTimer <= 0 && this.aiTimer > 120 && !this.isFiringSniperSubVolley && Math.random() < 0.03) { 
+                            this.aiState = 'sniper_charging';
+                            this.sniperChargeTimer = SNIPER_CHARGE_DURATION_FRAMES;
+                            this.sniperLaserActive = true;
+                            this.aiTimer = 0; 
+                        }
+                        if (this.sniperSubShotCooldownTimer > 0 && !this.isFiringSniperSubVolley) {
+                            this.sniperSubShotCooldownTimer--;
+                        }
+
+                    } else if (this.aiState === 'sniper_charging') { 
+                        this.sniperChargeTimer--;
+                        if (this.sniperChargeTimer <= 0) {
+                            this.aiState = 'sniper_locking'; 
+                            this.sniperLockTimer = SNIPER_LOCK_DURATION_FRAMES;
+                            this.sniperTargetAngle = this.turretAngle; 
+                        }
+                    } else if (this.aiState === 'sniper_locking') { 
+                        this.turretAngle = this.sniperTargetAngle; 
+                        this.sniperLockTimer--;
+                        if (this.sniperLockTimer <= 0) {
+                            this.shoot('SNIPER_SHOT'); 
+                            this.sniperLaserActive = false;
+                            this.sniperCooldownTimer = SNIPER_COOLDOWN_DURATION_FRAMES; 
+                            this.aiState = 'sniper_cooldown'; 
+                        }
+                    } else if (this.aiState === 'sniper_cooldown') {
+                        this.sniperCooldownTimer--;
+                        if (this.sniperCooldownTimer <= 0) {
+                            this.aiState = 'sniper_idle';
+                            this.aiTimer = 0; 
+                        }
+                    }
+                    this.x = Math.max(this.size / 2, Math.min(canvas.width - this.size / 2, this.x));
+                    this.y = Math.max(this.size / 2, Math.min(canvas.height - this.size / 2, this.y));
+                    return; 
+                }
+            
+                // --- Barrage Boss AI (Original) ---
+                if (this.bossVariant === 'BARRAGE') {
+                    const BARRAGE_ACTIVE_DURATION_FRAMES = (4 + Math.random() * 3) * 60; 
+                    const BARRAGE_COOLDOWN_DURATION_FRAMES = (1.5 + Math.random() * 2.5) * 60; 
+                    const BARRAGE_SUB_SHOT_INTERVAL_MS = 70; 
+                    const BARRAGE_MAIN_SHOT_INTERVAL_FRAMES = 15; 
+            
+                    if (this.aiState === 'barrage_idle') {
+                        this.aiTimer++;
+                        let moveX = 0, moveY = 0;
+                        if (distanceToPlayer > 300) {
+                            moveX = Math.cos(targetTurretAngle) * this.speed * 0.7;
+                            moveY = Math.sin(targetTurretAngle) * this.speed * 0.7;
+                        } else if (distanceToPlayer < 200) {
+                            moveX = -Math.cos(targetTurretAngle) * this.speed * 0.5;
+                            moveY = -Math.sin(targetTurretAngle) * this.speed * 0.5;
+                        }
+                        if (moveX !== 0 || moveY !== 0) this.targetAngle = Math.atan2(moveY, moveX);
+                        const newX = this.x + moveX; const newY = this.y + moveY;
+                        if (!this.checkWallCollision(newX, this.y)) this.x = newX;
+                        if (!this.checkWallCollision(this.x, newY)) this.y = newY;
+                        this.turretAngle = targetTurretAngle; 
+            
+                        if (this.barrageCooldownTimer <= 0 && this.aiTimer > 80 && Math.random() < 0.03) { 
+                            this.aiState = 'barrage_active';
+                            this.barrageActive = true;
+                            this.barrageDurationTimer = BARRAGE_ACTIVE_DURATION_FRAMES;
+                            this.barrageFixedAngle = this.turretAngle; 
+                            this.barrageSubShotAngleOffset = (Math.random() - 0.5) * 0.3; 
+                            this.aiTimer = 0;
+                        }
+                    } else if (this.aiState === 'barrage_active') {
+                        this.barrageDurationTimer--;
+                        this.turretAngle = this.barrageFixedAngle; 
+            
+                        if (this.barrageDurationTimer % BARRAGE_MAIN_SHOT_INTERVAL_FRAMES === 0) { 
+                            this.shoot('BARRAGE_MAIN', this.barrageFixedAngle);
+                        }
+                        if (Date.now() - this.barrageLastSubShot > BARRAGE_SUB_SHOT_INTERVAL_MS) {
+                            this.barrageSubShotAngleOffset += (Math.random() - 0.5) * 0.08; 
+                            this.barrageSubShotAngleOffset = Math.max(-Math.PI/6, Math.min(Math.PI/6, this.barrageSubShotAngleOffset)); 
+                
+                            const baseSpreadAngle = Math.PI / 9; 
+                            const randomSpreadFactor = 0.15; 
+                
+                            this.shoot('BARRAGE_SUB', this.barrageFixedAngle + this.barrageSubShotAngleOffset + (Math.random()-0.5) * randomSpreadFactor); 
+                            this.shoot('BARRAGE_SUB', this.barrageFixedAngle - baseSpreadAngle * 0.6 + this.barrageSubShotAngleOffset + (Math.random()-0.5) * randomSpreadFactor); 
+                            this.shoot('BARRAGE_SUB', this.barrageFixedAngle + baseSpreadAngle * 0.6 + this.barrageSubShotAngleOffset + (Math.random()-0.5) * randomSpreadFactor); 
+                            this.shoot('BARRAGE_SUB', this.barrageFixedAngle - baseSpreadAngle * 1.2 + this.barrageSubShotAngleOffset + (Math.random()-0.5) * randomSpreadFactor); 
+                            this.shoot('BARRAGE_SUB', this.barrageFixedAngle + baseSpreadAngle * 1.2 + this.barrageSubShotAngleOffset + (Math.random()-0.5) * randomSpreadFactor); 
+                            this.barrageLastSubShot = Date.now();
+                        }
+            
+                        if (this.barrageDurationTimer <= 0) {
+                            this.barrageActive = false;
+                            this.aiState = 'barrage_cooldown';
+                            this.barrageCooldownTimer = BARRAGE_COOLDOWN_DURATION_FRAMES;
+                        }
+                    } else if (this.aiState === 'barrage_cooldown') {
+                        this.barrageCooldownTimer--;
+                        this.turretAngle = targetTurretAngle; 
+                        if (this.barrageCooldownTimer <= 0) {
+                            this.aiState = 'barrage_idle';
+                        }
+                    }
+                    this.x = Math.max(this.size / 2, Math.min(canvas.width - this.size / 2, this.x));
+                    this.y = Math.max(this.size / 2, Math.min(canvas.height - this.size / 2, this.y));
+                    return; 
+                }
+            
+                // --- Default AI for non-player, non-specific-boss tanks ---
+                let moveX = 0, moveY = 0;
+                let engageDist = 200; 
+                let retreatDist = 120;
+            
+                this.aiTimer++;
+                if (this.aiTimer > 160) { 
+                    this.aiState = Math.random() < 0.65 ? 'approach' : 'retreat'; 
+                    this.aiTimer = 0;
+                }
+            
+                if (this.aiState === 'approach' && distanceToPlayer > engageDist) {
+                    moveX = Math.cos(targetTurretAngle) * this.speed * 0.75;
+                    moveY = Math.sin(targetTurretAngle) * this.speed * 0.75;
+                } else if (this.aiState === 'retreat' && distanceToPlayer < retreatDist + 70) {
+                    moveX = -Math.cos(targetTurretAngle) * this.speed * 0.55;
+                    moveY = -Math.sin(targetTurretAngle) * this.speed * 0.55;
+                }
+                if (moveX !== 0 || moveY !== 0) this.targetAngle = Math.atan2(moveY, moveX);
+            
+                const newX = this.x + moveX; const newY = this.y + moveY;
+                if (!this.checkWallCollision(newX, this.y)) this.x = newX;
+                if (!this.checkWallCollision(this.x, newY)) this.y = newY;
+                this.turretAngle = targetTurretAngle;
+            
+                let currentAiShootCooldown = this.shootCooldown;
+                if(this.tankType === 'NUCLEAR' && this.ammo === 0 && !this.isReloading) { 
+                    this.isReloading = true; this.reloadTimer = this.reloadTime;
+                }
+                if(this.tankType === 'NUCLEAR' && (this.isReloading || this.ammo === 0)) {
+                     currentAiShootCooldown = this.reloadTime > 0 ? this.reloadTime : 99999; 
+                }
+            
+                if (Date.now() - this.lastShot > currentAiShootCooldown * (1.1 + Math.random() * 0.7)) {
+                    this.shoot(); 
+                }
+                this.x = Math.max(this.size / 2, Math.min(canvas.width - this.size / 2, this.x));
+                this.y = Math.max(this.size / 2, Math.min(canvas.height - this.size / 2, this.y));
+            }
+
+
+            checkWallCollision(x, y) {
+                for (let wall of walls) {
+                    if (x - this.size / 2 < wall.x + wall.width && x + this.size / 2 > wall.x &&
+                        y - this.size / 2 < wall.y + wall.height && y + this.size / 2 > wall.y) return true;
+                }
+                return false;
+            }
+
+            shoot(shotType = null, fixedAngle = null) { 
+                if (!gameStarted || this.isExploding || gameState === 'ending' ||
+                    (this.isPlayer && this.isReloading && this.tankType !== 'NUCLEAR' && this.tankType !== 'AUTOMATON') || 
+                    (this.isPlayer && this.isFiringBurst)) { 
+                    return;
+                }
+                const now = Date.now();
+                const fireAngle = (fixedAngle !== null) ? fixedAngle : this.turretAngle;
+            
+                const bulletSpawnOffsetX = Math.cos(fireAngle) * (this.size * 0.7);
+                const bulletSpawnOffsetY = Math.sin(fireAngle) * (this.size * 0.7);
+
+                // OMEGA Boss specific shots
+                if (this.bossVariant === 'OMEGA') {
+                    if (shotType === 'OMEGA_BARRAGE_SUB') {
+                        bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                            Math.cos(fireAngle) * 6.5, Math.sin(fireAngle) * 6.5, 
+                            false, 7, false, 'BARRAGE_SUB')); 
+                        return;
+                    }
+                    if (shotType === 'OMEGA_RAPID_NORMAL') {
+                        bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                            Math.cos(fireAngle) * 6.0, Math.sin(fireAngle) * 6.0, 
+                            false, 15, false, 'STANDARD')); 
+                        return;
+                    }
+                    if (shotType === 'OMEGA_GUIDED_MISSILE_AI') {
+                        bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                            Math.cos(fireAngle) * this.bulletSpeed, Math.sin(fireAngle) * this.bulletSpeed,
+                            false, this.bulletDamage, false, 'RAKETA', true));
+                        return;
+                    }
+                    if (shotType === 'OMEGA_SNIPER_SHOT') {
+                         bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                            Math.cos(fireAngle) * 25, Math.sin(fireAngle) * 25, 
+                            false, 120, false, 'SNIPER_SHOT')); 
+                        return;
+                    }
+                }
+
+
+                // --- Guided Missile Barrage Shot (Original Boss) ---
+                if (shotType === 'GUIDED_MISSILE_AI' && this.bossVariant === 'GUIDED_MISSILE') {
+                    bullets.push(new Bullet(
+                        this.x + bulletSpawnOffsetX, 
+                        this.y + bulletSpawnOffsetY,
+                        Math.cos(fireAngle) * this.bulletSpeed, 
+                        Math.sin(fireAngle) * this.bulletSpeed,
+                        false, 
+                        this.bulletDamage, 
+                        false, 
+                        'RAKETA', 
+                        true      
+                    ));
+                    this.lastShot = now; 
+                    return;
+                }
+            
+                // --- Sniper Boss Shots (Original Boss) ---
+                if (shotType === 'SNIPER_NORMAL' && this.bossVariant === 'SNIPER') {
+                    bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                        Math.cos(fireAngle) * this.bulletSpeed, Math.sin(fireAngle) * this.bulletSpeed, 
+                        false, this.bulletDamage, false, 'STANDARD')); 
+                    this.lastShot = now;
+                    return;
+                }
+                if (shotType === 'SNIPER_SHOT' && this.bossVariant === 'SNIPER') {
+                    bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                        Math.cos(fireAngle) * 22, Math.sin(fireAngle) * 22, 
+                        false, 150, false, 'SNIPER_SHOT')); 
+                    this.lastShot = now; 
+                    return;
+                }
+                if (shotType === 'SNIPER_BARRAGE_SUB' && this.bossVariant === 'SNIPER') {
+                    const subShotDamage = 6; 
+                    const subShotSpeed = 5.5;  
+                    bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                        Math.cos(fireAngle) * subShotSpeed, Math.sin(fireAngle) * subShotSpeed, 
+                        false, subShotDamage, false, 'BARRAGE_SUB')); 
+                    return;
+                }
+            
+                // --- Barrage Boss Shots (Original Boss) ---
+                if (shotType === 'BARRAGE_MAIN' && this.bossVariant === 'BARRAGE') {
+                    bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                        Math.cos(fireAngle) * 5, Math.sin(fireAngle) * 5,
+                        false, 30, false, 'BARRAGE_MAIN')); 
+                    return;
+                }
+                if (shotType === 'BARRAGE_SUB' && this.bossVariant === 'BARRAGE') { 
+                    bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                        Math.cos(fireAngle) * 6, Math.sin(fireAngle) * 6, 
+                        false, 8, false, 'BARRAGE_SUB')); 
+                    return;
+                }
+            
+                // --- Default tank shooting logic (Player and generic AI) ---
+                switch (this.tankType) {
+                    case 'BALANCE': 
+                    case 'SPEED': 
+                        if (now - this.lastShot < this.shootCooldown) return; 
+                        bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                            Math.cos(fireAngle) * this.bulletSpeed, Math.sin(fireAngle) * this.bulletSpeed,
+                            this.isPlayer, this.bulletDamage, false, 'STANDARD'));
+                        this.lastShot = now;
+                        if (this.isPlayer) gameStats.shotsFired++;
+                        break;
+                    case 'POWER': 
+                        if (!this.isCharging && this.isPlayer) this.startCharging();
+                        break;
+                    case 'RAKETA': 
+                        if (this.isPlayer && !this.isReloading && !this.isFiringBurst) {
+                            this.isFiringBurst = true; this.bulletsInBurstLeft = this.burstSize; this.burstFireTimer = 0;
+                        }
+                        break;
+                    case 'NUCLEAR': 
+                        if (this.ammo > 0 && (!this.isReloading || this.ammo === this.maxAmmo) && (now - this.lastShot >= this.shootCooldown || !this.isPlayer)) {
+                            bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                                Math.cos(fireAngle) * this.bulletSpeed, Math.sin(fireAngle) * this.bulletSpeed,
+                                this.isPlayer, this.bulletDamage, false, 'NUCLEAR_MAIN'));
+                            this.ammo--; this.lastShot = now;
+                            if (this.isPlayer) gameStats.shotsFired++;
+                            if (!this.isReloading && this.ammo < this.maxAmmo) {
+                                this.isReloading = true; this.reloadTimer = this.reloadTime;
+                            }
+                        }
+                        break;
+                    case 'AUTOMATON': 
+                        if (this.bulletsInClip > 0 && (now - this.lastShot >= this.shootCooldown || !this.isPlayer)) {
+                            bullets.push(new Bullet(this.x + bulletSpawnOffsetX, this.y + bulletSpawnOffsetY,
+                                Math.cos(fireAngle) * this.bulletSpeed, Math.sin(fireAngle) * this.bulletSpeed,
+                                this.isPlayer, this.bulletDamage, false, 'STANDARD'));
+                            this.bulletsInClip--; this.lastShot = now;
+                            if (this.isPlayer) gameStats.shotsFired++;
+                            if (this.bulletsInClip === 0 && !this.isReloading) {
+                                this.isReloading = true; this.reloadTimer = this.reloadTime;
+                            }
+                        }
+                        break;
+                }
+            }
+
+
+            takeDamage(amount) {
+                if (this.isExploding || this.isDestroyed) return false;
+                if (this.armor > 0) {
+                    this.armor -= amount; this.armorFlashTime = 10;
+                    if (this.armor < 0) this.armor = 0;
+                    if (this.isPlayer || this.gameMode === 'RANKED_MATCH' || this.gameMode === 'OMEGA_BOSS_FIGHT') updateHUD(); 
+                    return false; 
+                }
+                this.hp -= amount; this.flashTime = 10;
+                if (this.isPlayer) gameStats.damageReceived += amount;
+                if (this.hp <= 0) {
+                    this.hp = 0; this.isExploding = true; this.explosionTimer = 0;
+                    if (!this.isPlayer) gameStats.enemiesKilled++;
+                    return true; 
+                }
+                if (this.isPlayer || this.gameMode === 'RANKED_MATCH' || this.gameMode === 'OMEGA_BOSS_FIGHT') updateHUD(); 
+                return false;
+            }
+
+            useRepairKit() {
+                if (this.isPlayer && this.repairKitStock.length > 0 && this.hp < this.maxHP && !this.isExploding) {
+                    this.repairKitStock.shift(); this.hp = this.maxHP; this.armor = this.maxArmor; 
+                    this.isHealing = true; this.healingEffectTimer = this.healingEffectDuration;
+                    updateHUD(); return true;
+                }
+                return false;
+            }
+
+            draw() { 
+                if (this.isDestroyed) return;
+                ctx.save();
+
+                if (this.isExploding) {
+                    const progress = this.explosionTimer / EXPLOSION_DURATION;
+                    const currentSize = this.size * (1 + progress * 3); 
+                    const alpha = 1 - progress;
+                    const coreColor = Math.floor(this.explosionTimer / 3) % 2 === 0 ? `rgba(255,60,0,${alpha * 0.95})` : `rgba(255,255,150,${alpha * 0.95})`;
+                    const waveColor = Math.floor(this.explosionTimer / 5) % 2 === 0 ? `rgba(255,200,80,${alpha * 0.65})` : `rgba(255,120,0,${alpha * 0.65})`;
+                    ctx.fillStyle = waveColor;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, currentSize, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = coreColor;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, currentSize * 0.45, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore(); return;
+                }
+
+                ctx.globalAlpha = 1.0;
+                if (this.flashTime > 0 && Math.floor(this.flashTime / 2) % 2 === 0) ctx.globalAlpha = 0.4;
+
+                let bodyColor = '#00cc00', trackColor = '#007700', turretColor = '#009900';
+
+                if (this.isPlayer) {
+                    switch (this.tankType) {
+                        case 'SPEED': bodyColor = '#00DDEE'; trackColor = '#00AAAA'; turretColor = '#00CCCC'; break;
+                        case 'POWER': bodyColor = '#FF9900'; trackColor = '#DD6600'; turretColor = '#EE7700'; break;
+                        case 'RAKETA': bodyColor = '#9D4EDD'; trackColor = '#5A189A'; turretColor = '#7B2CBF'; break;
+                        case 'NUCLEAR': bodyColor = '#C19A6B'; trackColor = '#8C6B4F'; turretColor = '#A9835B'; break;
+                        case 'AUTOMATON': bodyColor = '#3A86FF'; trackColor = '#0050D7'; turretColor = '#1E70FF'; break;
+                    }
+                } else { 
+                    if (this.gameMode === 'RANKED_MATCH' || this.gameMode === 'OMEGA_BOSS_FIGHT') { 
+                        switch(this.bossVariant) {
+                            case 'OMEGA':
+                                bodyColor = '#FFD700'; // Gold
+                                turretColor = '#FFA500'; // Orange
+                                trackColor = '#DAA520';  // Goldenrod
+                                break;
+                            case 'ORBITAL': // Color for Orbital Boss (本体)
+                                bodyColor = '#A9A9A9'; // DarkGray (or another non-threatening color)
+                                turretColor = '#808080'; // Gray
+                                trackColor = '#696969';  // DimGray
+                                break;
+                            case 'GUIDED_MISSILE': 
+                                bodyColor = '#8A2BE2';   
+                                turretColor = '#9932CC'; 
+                                trackColor = '#4B0082';  
+                                break; 
+                            case 'SNIPER': bodyColor = '#FF4500'; turretColor = '#CC3700'; trackColor = '#B22222'; break; 
+                            case 'BARRAGE': bodyColor = '#00CED1'; turretColor = '#008B8B'; trackColor = '#20B2AA'; break; 
+                            default: bodyColor = '#E51A1A'; turretColor = '#FF1010'; trackColor = '#9D0208'; break; 
+                        }
+                    } else { 
+                        bodyColor = '#D00000'; trackColor = '#9D0208'; turretColor = '#AA0000';
+                    }
+                }
+
+                ctx.translate(this.x, this.y); ctx.rotate(this.angle);
+                ctx.fillStyle = bodyColor; ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                ctx.fillStyle = trackColor;
+                const trackWidth = this.size * 0.22; const trackLength = this.size * 1.15;
+                const trackOffsetY = this.size * 0.52; 
+                ctx.fillRect(-trackLength / 2, -trackOffsetY, trackLength, trackWidth); 
+                ctx.fillRect(-trackLength / 2, trackOffsetY - trackWidth, trackLength, trackWidth); 
+                ctx.restore(); 
+
+                // Orbital boss does not have a turret
+                if (this.bossVariant !== 'ORBITAL') {
+                    ctx.save();
+                    ctx.translate(this.x, this.y); ctx.rotate(this.turretAngle);
+                    ctx.fillStyle = turretColor;
+                    const turretLength = this.size * 0.85; const turretWidth = this.size * 0.3;
+                    ctx.fillRect(this.size * 0.1, -turretWidth / 2, turretLength, turretWidth); 
+                    ctx.beginPath(); ctx.arc(0, 0, this.size * 0.38, 0, Math.PI * 2); ctx.fill(); 
+                    ctx.restore();
+                }
+
+
+                if (this.armorFlashTime > 0 && Math.floor(this.armorFlashTime / 2) % 2 === 0) {
+                    ctx.save();
+                    ctx.globalAlpha = 0.7 + Math.random()*0.2; 
+                    ctx.strokeStyle = 'rgba(0, 220, 255, 0.9)';
+                    ctx.lineWidth = Math.random() * 2 + 1; 
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size * (0.4 + Math.random()*0.1), 0, Math.PI * 2); 
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                ctx.globalAlpha = 1.0; 
+
+                if (this.isHealing && this.isPlayer) {
+                    const eP = this.healingEffectTimer / this.healingEffectDuration;
+                    const r = this.size * (0.75 + (1 - eP) * 0.6); const a = 0.18 + eP * 0.3;
+                    ctx.fillStyle = `rgba(80, 255, 80, ${a})`;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, r, 0, Math.PI * 2); ctx.fill();
+                }
+                
+                if ((this.bossVariant === 'SNIPER' || this.bossVariant === 'OMEGA') && this.sniperLaserActive && !this.isExploding && !this.isDestroyed) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    let laserAngle = this.turretAngle;
+                    if (this.aiState === 'sniper_locking' || this.aiState === 'omega_sniper_locking') { 
+                        laserAngle = this.sniperTargetAngle;
+                    }
+                    let laserEndX = this.x + Math.cos(laserAngle) * (canvas.width > canvas.height ? canvas.width : canvas.height) * 1.5; 
+                    let laserEndY = this.y + Math.sin(laserAngle) * (canvas.width > canvas.height ? canvas.width : canvas.height) * 1.5;
+            
+                    ctx.lineTo(laserEndX, laserEndY);
+                    ctx.strokeStyle = 'rgba(255, 0, 0, 0.3)'; 
+                    if(this.aiState === 'sniper_locking' || this.aiState === 'omega_sniper_locking') ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)'; 
+                    ctx.lineWidth = (this.aiState === 'sniper_locking' || this.aiState === 'omega_sniper_locking') ? 3 : 1.5; 
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                const barWidth = this.size * 1.1; const barHeight = 5; 
+                let barYOffset = this.size / 2 + 8;
+
+                if (this.hp < this.maxHP && this.hp > 0) {
+                    ctx.fillStyle = '#550000';
+                    ctx.fillRect(this.x - barWidth / 2, this.y - barYOffset, barWidth, barHeight);
+                    ctx.fillStyle = this.isPlayer ? '#66FF66' : (this.gameMode === 'RANKED_MATCH' || this.gameMode === 'OMEGA_BOSS_FIGHT' ? '#FF6347' : '#FFEE66'); 
+                    ctx.fillRect(this.x - barWidth / 2, this.y - barYOffset, barWidth * (this.hp / this.maxHP), barHeight);
+                    ctx.strokeStyle = '#333333'; ctx.strokeRect(this.x - barWidth / 2, this.y - barYOffset, barWidth, barHeight);
+                    barYOffset += barHeight + 2; 
+                }
+                if (this.maxArmor > 0 && this.armor >= 0) { 
+                    ctx.fillStyle = '#004455';
+                    ctx.fillRect(this.x - barWidth / 2, this.y - barYOffset, barWidth, barHeight);
+                    ctx.fillStyle = '#00CCFF';
+                    ctx.fillRect(this.x - barWidth / 2, this.y - barYOffset, barWidth * (this.armor / this.maxArmor), barHeight);
+                    ctx.strokeStyle = '#002233'; ctx.strokeRect(this.x - barWidth / 2, this.y - barYOffset, barWidth, barHeight);
+                }
+
+                // Draw orbiters if this is an ORBITAL boss
+                if (this.bossVariant === 'ORBITAL') {
+                    this.orbiters.forEach(orb => orb.draw());
+                }
+            }
+        }
+
+        class Orbiter {
+            constructor(x, y, parentBoss) {
+                this.x = x;
+                this.y = y;
+                this.parentBoss = parentBoss; // Reference to the main Orbital boss
+                this.size = 18; // Smaller than tanks
+                this.hp = 50; // Low HP
+                this.maxHp = 50;
+                this.speed = 2.8; // Agile
+                this.angle = Math.random() * Math.PI * 2; // Movement angle
+                this.targetAngle = this.angle;
+                this.rotationSpeed = Math.PI / 20;
+
+                this.isDestroyed = false;
+                this.isExploding = false;
+                this.explosionTimer = 0;
+                this.flashTime = 0;
+
+                // Laser attack properties
+                this.laserState = 'idle'; // 'idle', 'charging', 'firing'
+                this.laserChargeTime = 0.3 * 60; // 0.3 seconds to charge (frames)
+                this.laserFireTime = 0.5 * 60;   // 0.5 seconds fire duration (frames)
+                this.laserCooldownTime = (2 + Math.random() * 2) * 60; // 2-4 seconds cooldown
+                this.laserTimer = 0; // General timer for current laser state
+                this.laserTargetAngle = 0; // Angle the laser will fire at
+                this.laserDamage = 25;
+
+                // Movement AI properties
+                this.aiTimer = Math.random() * 60; // General AI timer
+                this.orbitDirection = Math.random() < 0.5 ? 1 : -1; // Clockwise or Counter-clockwise
+                this.preferredOrbitDistance = 150 + Math.random() * 50; // Distance to orbit player
+                this.fleeDistance = 80; // If player gets too close
+            }
+
+            destroy() { // Method to mark orbiter as destroyed (e.g., if parent dies)
+                if (!this.isDestroyed && !this.isExploding) {
+                    this.isExploding = true;
+                    this.explosionTimer = 0;
+                    createExplosionEffect(this.x, this.y); // Visual effect
+                }
+            }
+
+
+            update() {
+                if (this.isDestroyed) return true; // Signal to remove from array
+
+                if (this.isExploding) {
+                    this.explosionTimer++;
+                    if (this.explosionTimer >= EXPLOSION_DURATION / 2) { // Shorter explosion for orbiters
+                        this.isDestroyed = true;
+                        return true;
+                    }
+                    return false;
+                }
+
+                if (!player || player.isDestroyed) { // Stop if player is gone
+                    this.laserState = 'idle';
+                    return false;
+                }
+                
+                this.aiTimer++;
+
+                // Movement AI
+                const dxPlayer = player.x - this.x;
+                const dyPlayer = player.y - this.y;
+                const distanceToPlayer = Math.sqrt(dxPlayer * dxPlayer + dyPlayer * dyPlayer);
+                const angleToPlayer = Math.atan2(dyPlayer, dxPlayer);
+
+                let moveX = 0;
+                let moveY = 0;
+
+                // Flee if too close
+                if (distanceToPlayer < this.fleeDistance) {
+                    this.targetAngle = angleToPlayer + Math.PI; // Flee
+                } 
+                // Orbit player
+                else {
+                    // Adjust distance to preferred orbit
+                    if (distanceToPlayer > this.preferredOrbitDistance + 20) {
+                        this.targetAngle = angleToPlayer; // Approach
+                    } else if (distanceToPlayer < this.preferredOrbitDistance - 20) {
+                        this.targetAngle = angleToPlayer + Math.PI; // Move away slightly
+                    } else {
+                        // Orbiting: move perpendicular to player
+                        this.targetAngle = angleToPlayer + (Math.PI / 2 * this.orbitDirection);
+                    }
+                    if (this.aiTimer % (120 + Math.floor(Math.random()*60)) === 0) { // Change orbit direction periodically
+                        this.orbitDirection *= -1;
+                        this.preferredOrbitDistance = 130 + Math.random() * 70;
+                    }
+                }
+                 // Smoothly turn body
+                if (this.angle !== this.targetAngle) {
+                    let diff = this.targetAngle - this.angle;
+                    while (diff < -Math.PI) diff += 2 * Math.PI;
+                    while (diff > Math.PI) diff -= 2 * Math.PI;
+                    if (Math.abs(diff) < this.rotationSpeed) this.angle = this.targetAngle;
+                    else this.angle += Math.sign(diff) * this.rotationSpeed;
+                    this.angle = (this.angle + 2 * Math.PI) % (2 * Math.PI);
+                }
+
+                moveX = Math.cos(this.angle) * this.speed;
+                moveY = Math.sin(this.angle) * this.speed;
+                
+                this.x += moveX;
+                this.y += moveY;
+
+                // Keep orbiter within bounds (simple bounce)
+                if (this.x - this.size/2 < 0 || this.x + this.size/2 > canvas.width) {
+                    this.angle += Math.PI/2; // crude bounce
+                    this.x = Math.max(this.size/2, Math.min(canvas.width - this.size/2, this.x));
+                }
+                if (this.y - this.size/2 < 0 || this.y + this.size/2 > canvas.height) {
+                    this.angle += Math.PI/2; // crude bounce
+                    this.y = Math.max(this.size/2, Math.min(canvas.height - this.size/2, this.y));
+                }
+
+
+                // Laser Attack AI
+                this.laserTimer--;
+                if (this.laserState === 'idle' && this.laserTimer <= 0) {
+                    this.laserState = 'charging';
+                    this.laserTimer = this.laserChargeTime;
+                    this.laserTargetAngle = angleToPlayer; // Aim at player when charging starts
+                } else if (this.laserState === 'charging') {
+                    this.laserTargetAngle = angleToPlayer; // Continuously update aim during charge
+                    if (this.laserTimer <= 0) {
+                        this.laserState = 'firing';
+                        this.laserTimer = this.laserFireTime;
+                        // Laser target angle is now fixed for the duration of the shot
+                    }
+                } else if (this.laserState === 'firing') {
+                    // Laser is active, check for collision in global update
+                    if (this.laserTimer <= 0) {
+                        this.laserState = 'idle';
+                        this.laserTimer = this.laserCooldownTime + Math.random() * 60; // Cooldown + some variance
+                    }
+                }
+                if (this.flashTime > 0) this.flashTime--;
+                return false; // Not destroyed yet
+            }
+
+            takeDamage(amount) {
+                if (this.isExploding || this.isDestroyed) return false;
+                this.hp -= amount;
+                this.flashTime = 10;
+                if (this.hp <= 0) {
+                    this.hp = 0;
+                    this.isExploding = true;
+                    this.explosionTimer = 0;
+                    createExplosionEffect(this.x, this.y);
+                    if (this.parentBoss && !this.parentBoss.isPlayer) gameStats.enemiesKilled++; // Count as kill
+                    return true; // Destroyed
+                }
+                return false;
+            }
+
+            draw() {
+                if (this.isDestroyed) return;
+                ctx.save();
+
+                if (this.isExploding) {
+                    const progress = this.explosionTimer / (EXPLOSION_DURATION / 2);
+                    const currentSize = this.size * (1 + progress * 2); 
+                    const alpha = 1 - progress;
+                    const coreColor = `rgba(255,180,0,${alpha * 0.9})`;
+                    const waveColor =  `rgba(255,220,100,${alpha * 0.6})`;
+                    ctx.fillStyle = waveColor;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, currentSize, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = coreColor;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, currentSize * 0.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.restore(); return;
+                }
+                
+                ctx.globalAlpha = 1.0;
+                if (this.flashTime > 0 && Math.floor(this.flashTime / 2) % 2 === 0) ctx.globalAlpha = 0.4;
+
+
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.angle + Math.PI / 2); // Pointy end forward
+
+                // Orbiter body (e.g., a diamond or triangle shape)
+                ctx.fillStyle = '#D4AC0D'; // Darker Yellow/Gold
+                ctx.beginPath();
+                ctx.moveTo(0, -this.size * 0.7);
+                ctx.lineTo(this.size * 0.5, 0);
+                ctx.lineTo(0, this.size * 0.3);
+                ctx.lineTo(-this.size * 0.5, 0);
+                ctx.closePath();
+                ctx.fill();
+
+                ctx.strokeStyle = '#F1C40F'; // Brighter Yellow
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+                ctx.restore();
+                ctx.globalAlpha = 1.0;
+
+
+                // Draw Laser
+                if (this.laserState === 'charging') {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    const chargeProgress = 1 - (this.laserTimer / this.laserChargeTime);
+                    const laserEndX = this.x + Math.cos(this.laserTargetAngle) * canvas.width * 1.5; // Long enough to cross screen
+                    const laserEndY = this.y + Math.sin(this.laserTargetAngle) * canvas.height * 1.5;
+                    ctx.lineTo(laserEndX, laserEndY);
+                    ctx.strokeStyle = `rgba(255, 255, 0, ${0.1 + chargeProgress * 0.3})`; // Faint yellow, increasing opacity
+                    ctx.lineWidth = 1 + chargeProgress * 2;
+                    ctx.stroke();
+                    ctx.restore();
+                } else if (this.laserState === 'firing') {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.moveTo(this.x, this.y);
+                    const laserEndX = this.x + Math.cos(this.laserTargetAngle) * canvas.width * 1.5;
+                    const laserEndY = this.y + Math.sin(this.laserTargetAngle) * canvas.height * 1.5;
+                    ctx.lineTo(laserEndX, laserEndY);
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.75)'; // Bright yellow
+                    ctx.lineWidth = 3;
+                    ctx.shadowColor = "yellow";
+                    ctx.shadowBlur = 8;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
+                // Orbiter HP bar
+                const barWidth = this.size * 1.2;
+                const barHeight = 4;
+                const barYOffset = this.size / 2 + 5;
+                 if (this.hp < this.maxHp && this.hp > 0) {
+                    ctx.fillStyle = '#555500'; // Darker yellow for background
+                    ctx.fillRect(this.x - barWidth / 2, this.y - barYOffset, barWidth, barHeight);
+                    ctx.fillStyle = '#FFFF66'; // Light yellow for HP
+                    ctx.fillRect(this.x - barWidth / 2, this.y - barYOffset, barWidth * (this.hp / this.maxHp), barHeight);
+                    ctx.strokeStyle = '#AAAA00'; ctx.strokeRect(this.x - barWidth / 2, this.y - barYOffset, barWidth, barHeight);
+                }
+            }
+        }
+
+
+        class Bullet {
+            constructor(x, y, vx, vy, isPlayer, damage = 20, isPowerShot = false, bulletType = 'STANDARD', isAIMissile = false) {
+                this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.isPlayer = isPlayer;
+                this.damage = damage; this.isPowerShot = isPowerShot; this.bulletType = bulletType;
+                this.bounces = 0; this.trail = []; this.rotation = Math.atan2(vy, vx);
+                this.isDestroyed = false; 
+                this.isAIMissile = isAIMissile; 
+        
+                switch (this.bulletType) {
+                    case 'RAKETA': 
+                        this.width = 5; this.length = 16; this.maxBounces = 0; 
+                        this.size = this.length; 
+                        if (this.isAIMissile) {
+                            this.hp = 1; 
+                            this.turnSpeed = Math.PI / 80; 
+                            this.randomAmplitudeX = (Math.random() - 0.5) * 0.6; 
+                            this.randomAmplitudeY = (Math.random() - 0.5) * 0.6;
+                            this.randomFrequency = 1 + Math.random();
+                            this.oscillationTimer = Math.random() * Math.PI * 2; 
+                        } else { 
+                            this.hp = 1; 
+                            this.turnSpeed = Math.PI / 75; 
+                        }
+                        break;
+                    case 'NUCLEAR_MAIN':
+                        this.hp = 1; this.size = 16; this.maxBounces = 0;
+                        break;
+                    case 'NUCLEAR_FRAGMENT':
+                        this.hp = 1; this.size = 7; this.maxBounces = 1; this.damage = NUCLEAR_FRAGMENT_DAMAGE;
+                        break;
+                    case 'SNIPER_SHOT':
+                        this.hp = 1; this.size = 8; this.length = 25; this.maxBounces = 0; 
+                        break;
+                    case 'BARRAGE_MAIN':
+                        this.hp = 1; this.size = 7; this.maxBounces = 0;
+                        break;
+                    case 'BARRAGE_SUB': 
+                        this.hp = 1; this.size = 4; this.maxBounces = 1;
+                        break;
+                    default: // STANDARD
+                        this.hp = 1; this.size = isPowerShot ? 10 : 5; this.maxBounces = isPowerShot ? 0 : 2;
+                        break;
+                }
+            }
+
+            takeDamage(amount) { 
+                if (!this.isAIMissile || this.isDestroyed) return false; 
+                this.hp -= amount;
+                if (this.hp <= 0) {
+                    this.isDestroyed = true;
+                    createExplosionEffect(this.x, this.y); 
+                    return true; 
+                }
+                return false; 
+            }
+
+            update() { 
+                if (this.isDestroyed) return true; 
+
+                this.trail.push({ x: this.x, y: this.y });
+                const trailLength = this.isPowerShot || this.bulletType === 'NUCLEAR_MAIN' || this.bulletType === 'SNIPER_SHOT' ? 15 : (this.bulletType === 'RAKETA' ? 10 : 8);
+                if (this.trail.length > trailLength) this.trail.shift();
+
+                if (this.isAIMissile && player && !player.isDestroyed) { 
+                    const targetAngle = Math.atan2(player.y - this.y, player.x - this.x);
+                    let angleDiff = targetAngle - this.rotation;
+                    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+
+                    if (Math.abs(angleDiff) < this.turnSpeed * (1 + Math.random()*0.5) ) { 
+                        this.rotation = targetAngle;
+                    } else {
+                        this.rotation += Math.sign(angleDiff) * this.turnSpeed * (0.8 + Math.random()*0.4);
+                    }
+                    this.rotation = (this.rotation + 2 * Math.PI) % (2 * Math.PI); 
+
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy); 
+                    this.vx = Math.cos(this.rotation) * currentSpeed;
+                    this.vy = Math.sin(this.rotation) * currentSpeed;
+
+                    this.oscillationTimer += 0.05 * this.randomFrequency;
+                    const swayX = Math.sin(this.oscillationTimer) * this.randomAmplitudeX;
+                    const swayY = Math.cos(this.oscillationTimer * 0.7) * this.randomAmplitudeY; 
+                    this.vx += swayX;
+                    this.vy += swayY;
+
+                    const newSpeedMag = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (newSpeedMag > 0.1 && Math.abs(newSpeedMag - currentSpeed) > 0.5) { 
+                        this.vx = (this.vx / newSpeedMag) * currentSpeed;
+                        this.vy = (this.vy / newSpeedMag) * currentSpeed;
+                    }
+
+                } else if (this.bulletType === 'RAKETA' && !this.isPlayer && player && !player.isDestroyed) { 
+                    const targetAngle = Math.atan2(player.y - this.y, player.x - this.x);
+                    let angleDiff = targetAngle - this.rotation;
+                    while (angleDiff > Math.PI) angleDiff -= 2 * Math.PI;
+                    while (angleDiff < -Math.PI) angleDiff += 2 * Math.PI;
+                    if (Math.abs(angleDiff) < this.turnSpeed) this.rotation = targetAngle;
+                    else this.rotation += Math.sign(angleDiff) * this.turnSpeed;
+                    this.rotation = (this.rotation + 2 * Math.PI) % (2 * Math.PI);
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy); 
+                    this.vx = Math.cos(this.rotation) * currentSpeed;
+                    this.vy = Math.sin(this.rotation) * currentSpeed;
+                }
+
+
+                this.x += this.vx; this.y += this.vy;
+                let bouncedThisFrame = false;
+                const colRadius = (this.bulletType === 'RAKETA' ? this.width / 2 : (this.bulletType === 'SNIPER_SHOT' ? this.size / 2 : this.size / 2)) * 0.9;
+
+                if (this.x - colRadius <= 0 || this.x + colRadius >= canvas.width ||
+                    this.y - colRadius <= 0 || this.y + colRadius >= canvas.height) {
+                    if (this.bulletType === 'NUCLEAR_MAIN') { createNuclearExplosion(this.x, this.y, this.isPlayer); this.isDestroyed = true; return true; }
+                    if (this.bulletType === 'RAKETA') { 
+                        createExplosionEffect(this.x, this.y); this.isDestroyed = true; return true;
+                    }
+                    if (this.bounces < this.maxBounces && this.bulletType !== 'SNIPER_SHOT') { 
+                        if (this.x - colRadius <= 0 || this.x + colRadius >= canvas.width) this.vx = -this.vx;
+                        if (this.y - colRadius <= 0 || this.y + colRadius >= canvas.height) this.vy = -this.vy;
+                        this.rotation = Math.atan2(this.vy, this.vx);
+                        bouncedThisFrame = true;
+                        this.x = Math.max(colRadius, Math.min(canvas.width - colRadius, this.x));
+                        this.y = Math.max(colRadius, Math.min(canvas.height - colRadius, this.y));
+                    } else {
+                        if(this.bulletType === 'SNIPER_SHOT') { this.isDestroyed = true; return true; } 
+                        createExplosionEffect(this.x, this.y); 
+                        this.isDestroyed = true; return true;
+                    }
+                }
+
+                for (let wall of walls) {
+                    if (this.bulletType === 'SNIPER_SHOT') { continue; } 
+
+                    let bulletRect; 
+                    if (this.bulletType === 'RAKETA') { 
+                        const c = Math.cos(this.rotation); const s = Math.sin(this.rotation);
+                        const hw = this.length / 2; const hh = this.width / 2;
+                        const corners = [
+                            { x: -hw * c + hh * s, y: -hw * s - hh * c }, { x: hw * c + hh * s, y: hw * s - hh * c },
+                            { x: hw * c - hh * s, y: hw * s + hh * c },   { x: -hw * c - hh * s, y: -hw * s + hh * c }
+                        ];
+                        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+                        corners.forEach(p => {
+                            minX = Math.min(minX, this.x + p.x); maxX = Math.max(maxX, this.x + p.x);
+                            minY = Math.min(minY, this.y + p.y); maxY = Math.max(maxY, this.y + p.y);
+                        });
+                        bulletRect = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+                    } else {
+                        bulletRect = { x: this.x - colRadius, y: this.y - colRadius, width: colRadius * 2, height: colRadius * 2 };
+                    }
+                    const wallRect = { x: wall.x, y: wall.y, width: wall.width, height: wall.height };
+
+                    if (bulletRect.x < wallRect.x + wallRect.width && bulletRect.x + bulletRect.width > wallRect.x &&
+                        bulletRect.y < wallRect.y + wallRect.height && bulletRect.y + bulletRect.height > wallRect.y) {
+                        if (this.bulletType === 'NUCLEAR_MAIN') { createNuclearExplosion(this.x, this.y, this.isPlayer); this.isDestroyed = true; return true; }
+                        if (this.bulletType === 'RAKETA') { 
+                            createExplosionEffect(this.x, this.y); this.isDestroyed = true; return true;
+                        }
+                        if (this.bounces < this.maxBounces) {
+                            const prevCenterX = this.x - this.vx; const prevCenterY = this.y - this.vy;
+                            let bounced = false;
+                            if (prevCenterX + colRadius <= wall.x && this.x + colRadius > wall.x ||  
+                                prevCenterX - colRadius >= wall.x + wall.width && this.x - colRadius < wall.x + wall.width) { 
+                                this.vx = -this.vx; bounced = true;
+                            }
+                            if (prevCenterY + colRadius <= wall.y && this.y + colRadius > wall.y || 
+                                prevCenterY - colRadius >= wall.y + wall.height && this.y - colRadius < wall.y + wall.height) { 
+                                this.vy = -this.vy; bounced = true;
+                            }
+                            if(!bounced){ 
+                               const dxWall = (wall.x + wall.width/2) - this.x;
+                               const dyWall = (wall.y + wall.height/2) - this.y;
+                               const widthCheck = (wall.width/2 + colRadius);
+                               const heightCheck = (wall.height/2 + colRadius);
+                               if(Math.abs(dxWall) / widthCheck > Math.abs(dyWall) / heightCheck) this.vx = -this.vx; else this.vy = -this.vy;
+                            }
+                            this.rotation = Math.atan2(this.vy, this.vx);
+                            this.x += this.vx * 0.15; this.y += this.vy * 0.15; 
+                        } else {
+                            createExplosionEffect(this.x, this.y); 
+                            this.isDestroyed = true; return true;
+                        }
+                        bouncedThisFrame = true; break;
+                    }
+                }
+                if (bouncedThisFrame) {
+                    this.bounces++;
+                    if (this.bounces > this.maxBounces) {
+                        createExplosionEffect(this.x, this.y); 
+                        this.isDestroyed = true; return true;
+                    }
+                }
+                return this.isDestroyed; 
+            }
+            draw() { 
+                ctx.save();
+                const trailAlphaFactor = (this.bulletType === 'RAKETA' || this.bulletType === 'SNIPER_SHOT') ? 0.7 : 0.6;
+                const trailDotSize = (this.bulletType === 'RAKETA' || this.bulletType === 'SNIPER_SHOT') ? 2.5 : (this.isPowerShot ? 3 : 2);
+                let trailBaseColor = this.isPlayer ? (this.isPowerShot ? '#FFB030' : '#FFFFD0') : '#FFC0A0';
+                
+                if (this.isAIMissile) trailBaseColor = '#FF8C00'; 
+                else if (this.bulletType === 'RAKETA' && this.isPlayer) trailBaseColor = '#FF5020'; 
+                else if (this.bulletType === 'NUCLEAR_FRAGMENT') trailBaseColor = '#FFF050';
+                else if (this.bulletType === 'SNIPER_SHOT') trailBaseColor = '#FF88FF'; 
+                else if (this.bulletType === 'BARRAGE_MAIN') trailBaseColor = '#FFD700'; 
+                else if (this.bulletType === 'BARRAGE_SUB') trailBaseColor = '#ADFF2F';  
+
+                if (this.bulletType !== 'NUCLEAR_MAIN') {
+                    for (let i = 0; i < this.trail.length; i++) {
+                        const alpha = (i / this.trail.length) * trailAlphaFactor;
+                        ctx.globalAlpha = alpha; ctx.fillStyle = trailBaseColor;
+                        ctx.fillRect(this.trail[i].x - trailDotSize / 2, this.trail[i].y - trailDotSize / 2, trailDotSize, trailDotSize);
+                    }
+                }
+                ctx.globalAlpha = 1.0;
+
+                ctx.translate(this.x, this.y);
+                if (this.bulletType === 'RAKETA' || this.bulletType === 'SNIPER_SHOT') ctx.rotate(this.rotation);
+
+                switch (this.bulletType) {
+                    case 'RAKETA':
+                        ctx.fillStyle = this.isAIMissile ? '#B22222' : (this.isPlayer ? '#A0A0A0' : '#B22222'); 
+                        ctx.fillRect(-this.length / 2, -this.width / 2, this.length, this.width);
+                        ctx.fillStyle = this.isAIMissile ? '#FF6347' : (this.isPlayer ? '#FF7700' : '#FF6347'); 
+                        ctx.fillRect(this.length / 2 - 4, -this.width / 2, 4, this.width);
+                        ctx.fillStyle = this.isAIMissile ? '#8B0000' : (this.isPlayer ? '#808080' : '#8B0000'); 
+                        ctx.fillRect(-this.length/2, -this.width/2 -1.5, this.length * 0.25, 1.5);
+                        ctx.fillRect(-this.length/2, this.width/2, this.length * 0.25, 1.5);
+                        break;
+                    case 'NUCLEAR_MAIN':
+                        ctx.fillStyle = '#FFFF66'; 
+                        ctx.beginPath(); ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = `rgba(255, 255, 220, ${0.5 + Math.sin(Date.now() / 70) * 0.3})`;
+                        ctx.beginPath(); ctx.arc(0, 0, this.size * 0.75, 0, Math.PI * 2); ctx.fill(); 
+                        break;
+                    case 'NUCLEAR_FRAGMENT':
+                        ctx.fillStyle = '#E8E840'; 
+                        ctx.beginPath(); ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2); ctx.fill();
+                        break;
+                    case 'SNIPER_SHOT':
+                        ctx.fillStyle = '#FF00FF'; 
+                        ctx.fillRect(-this.length / 2, -this.size / 2, this.length, this.size); 
+                        ctx.fillStyle = '#FFFFFF'; 
+                        ctx.fillRect(this.length / 2 - 4, -this.size / 2, 4, this.size);
+                        break;
+                    case 'BARRAGE_MAIN':
+                        ctx.fillStyle = '#FFA500'; 
+                        ctx.beginPath(); ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2); ctx.fill();
+                        break;
+                    case 'BARRAGE_SUB':
+                        ctx.fillStyle = '#FFFF00'; 
+                        ctx.beginPath(); ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2); ctx.fill();
+                        break;
+                    default: // STANDARD
+                        let bulletColor = this.isPlayer ? (this.isPowerShot ? '#FF8800' : '#FFEE33') : '#FFAA55';
+                        ctx.fillStyle = bulletColor;
+                        if (this.isPowerShot) {
+                            ctx.beginPath(); ctx.arc(0,0, this.size/2, 0, Math.PI * 2); ctx.fill();
+                            ctx.fillStyle = `rgba(255,255,255, ${0.4 + Math.random()*0.35})`;
+                            ctx.beginPath(); ctx.arc(0,0, this.size*0.75, 0, Math.PI * 2); ctx.fill();
+                        } else {
+                            ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+                        }
+                        break;
+                }
+                ctx.restore();
+            }
+        }
+        
+        class SmallExplosion { 
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.timer = 0;
+                this.duration = 20; 
+                this.maxRadius = 15 + Math.random() * 10; 
+                this.color1 = `rgba(255, ${100 + Math.floor(Math.random()*100)}, 0, 0.8)`;
+                this.color2 = `rgba(255, 255, ${Math.floor(Math.random()*150)}, 0.7)`;
+            }
+            update() {
+                this.timer++;
+                return this.timer >= this.duration;
+            }
+            draw() {
+                const progress = this.timer / this.duration;
+                const radius = this.maxRadius * Math.sin(progress * Math.PI); 
+                const alpha = 1 - progress;
+        
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = this.color1;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.fillStyle = this.color2;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, radius * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        function createExplosionEffect(x, y) { 
+            activeExplosions.push(new SmallExplosion(x, y));
+        }
+
+        class NuclearExplosion { 
+            constructor(x, y, isPlayerOwner) {
+                this.x = x; this.y = y; this.isPlayerOwner = isPlayerOwner;
+                this.radius = 0; this.timer = 0; this.duration = NUCLEAR_EXPLOSION_DURATION_FRAMES;
+                this.maxRadius = NUCLEAR_EXPLOSION_MAX_RADIUS; this.damage = NUCLEAR_EXPLOSION_DAMAGE;
+                this.hasDamaged = new Set();
+            }
+            update() {
+                this.timer++;
+                const expansionPhase = this.duration * 0.3;
+                const lingerPhase = this.duration * 0.7;
+                if (this.timer < expansionPhase) this.radius = (this.timer / expansionPhase) * this.maxRadius;
+                else this.radius = this.maxRadius * Math.max(0, (1 - (this.timer - expansionPhase) / lingerPhase));
+
+                const targets = this.isPlayerOwner ? enemies : (player && !player.isDestroyed ? [player] : []);
+                for (let target of targets) {
+                    if (target.isExploding || target.isDestroyed || this.hasDamaged.has(target)) continue;
+                    const dx = this.x - target.x; const dy = this.y - target.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < this.radius + target.size / 2) {
+                        target.takeDamage(this.damage); this.hasDamaged.add(target);
+                    }
+                }
+                return this.timer >= this.duration;
+            }
+            draw() {
+                const progress = this.timer / this.duration;
+                const alpha = Math.sin(progress * Math.PI) * 0.9; 
+                ctx.save();
+                ctx.fillStyle = `rgba(255, 190, 30, ${alpha * 0.5})`; 
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = `rgba(255, 255, 210, ${alpha * 0.85})`; 
+                ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 0.6, 0, Math.PI * 2); ctx.fill();
+                if (this.timer < this.duration * 0.25) { 
+                    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.beginPath(); ctx.arc(this.x, this.y, this.radius * 0.25, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        function createNuclearExplosion(x, y, isPlayerOwner) { 
+            activeExplosions.push(new NuclearExplosion(x, y, isPlayerOwner));
+            const numFragments = 12 + Math.floor(Math.random() * 7); 
+            for (let i = 0; i < numFragments; i++) {
+                const angle = Math.random() * Math.PI * 2; const speed = 2.8 + Math.random() * 3.2;
+                bullets.push(new Bullet(x, y, Math.cos(angle) * speed, Math.sin(angle) * speed,
+                    isPlayerOwner, NUCLEAR_FRAGMENT_DAMAGE, false, 'NUCLEAR_FRAGMENT')); 
+            }
+        }
+
+        class Wall { 
+            constructor(x, y, width, height) { this.x = x; this.y = y; this.width = width; this.height = height; }
+            draw() {
+                ctx.fillStyle = '#555555'; ctx.fillRect(this.x, this.y, this.width, this.height); 
+                ctx.strokeStyle = '#777777'; ctx.lineWidth = 2; 
+                ctx.strokeRect(this.x, this.y, this.width, this.height);
+            }
+        }
+        class RepairKit { 
+            constructor(x, y) { this.x = x; this.y = y; this.size = 22; this.active = true; } 
+            draw() {
+                if (!this.active) return;
+                ctx.fillStyle = '#CC0000';
+                ctx.fillRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+                ctx.strokeStyle = '#EE3333'; ctx.lineWidth = 1.5;
+                ctx.strokeRect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
+                ctx.fillStyle = '#FFFFFF';
+                const crossThickness = this.size / 5;
+                ctx.fillRect(this.x - crossThickness / 2, this.y - this.size / 2.6, crossThickness, this.size / 1.3);
+                ctx.fillRect(this.x - this.size / 2.6, this.y - crossThickness / 2, this.size / 1.3, crossThickness);
+            }
+            checkCollisionWithPlayer(playerToCheck) {
+                if (!this.active || !playerToCheck) return false;
+                const dx = this.x - playerToCheck.x; const dy = this.y - playerToCheck.y;
+                return Math.sqrt(dx * dx + dy * dy) < (this.size / 2 + playerToCheck.size / 2);
+            }
+        }
+
+        function generateLevel() { 
+            walls = [];
+            const wallCount = 6 + Math.floor(Math.random() * 5); 
+            const minWallSize = 50; const maxWallSize = 120; 
+            for (let i = 0; i < wallCount; i++) {
+                let width = minWallSize + Math.random() * (maxWallSize - minWallSize);
+                let height = minWallSize + Math.random() * (maxWallSize - minWallSize);
+                if (Math.random() < 0.5) width = Math.min(width, height, 25); else height = Math.min(width,height,25);
+
+                let x = Math.random() * (canvas.width - width - 50) + 25; 
+                let y = Math.random() * (canvas.height - height - 50) + 25;
+                walls.push(new Wall(x, y, width, height));
+            }
+        }
+
+        function startGame(mode) { 
+            selectedGameMode = mode || 'SINGLE_MATCH';
+            gameState = 'playing';
+            showScreen('gameScreen');
+            gameStarted = false; countdownTimer = 180;
+            gameStats = { shotsFired: 0, shotsHit: 0, enemiesKilled: 0, damageReceived: 0 };
+            activeExplosions = [];
+            isMouseDown = false; 
+
+            document.getElementById('waveDisplay').style.display = 'none';
+            document.getElementById('armorDisplay').style.display = 'none';
+
+            generateLevel();
+            const playerSpawn = findSafeSpawnPosition(player ? player.size : 30, 0, walls); 
+            player = new Tank(playerSpawn.x, playerSpawn.y, true, selectedTankType, selectedGameMode);
+
+            enemies = []; bullets = []; repairKits = [];
+
+            switch (selectedGameMode) {
+                case 'SINGLE_MATCH':
+                    numRepairKitsToSpawn = 1 + Math.floor(Math.random() * 2);
+                    const numEnemiesSingle = 3 + Math.floor(Math.random()*2); 
+                    for (let i = 0; i < numEnemiesSingle; i++) {
+                        const enemySpawn = findSafeSpawnPosition(30, 200, walls, player ? [player] : []);
+                        enemies.push(new Tank(enemySpawn.x, enemySpawn.y, false, 'BALANCE', selectedGameMode));
+                    }
+                    break;
+                case 'ARENA':
+                    document.getElementById('waveDisplay').style.display = 'block';
+                    currentWave = 1; enemiesSpawnedThisWave = 0;
+                    spawnArenaWave();
+                    numRepairKitsToSpawn = 1;
+                    break;
+                case 'RANKED_MATCH':
+                    document.getElementById('armorDisplay').style.display = 'block';
+                    const bossVariants = ['GUIDED_MISSILE', 'SNIPER', 'BARRAGE', 'ORBITAL']; // Added ORBITAL
+                    const selectedBossVariant = bossVariants[Math.floor(Math.random() * bossVariants.length)];
+                    console.log("Selected Boss Variant for this match:", selectedBossVariant); 
+
+                    const bossSpawn = findSafeSpawnPosition(38, 250, walls, player ? [player] : []); 
+                    enemies.push(new Tank(bossSpawn.x, bossSpawn.y, false, 'BALANCE', selectedGameMode, selectedBossVariant)); 
+                    numRepairKitsToSpawn = 1;
+                    break;
+                case 'OMEGA_BOSS_FIGHT': 
+                    document.getElementById('armorDisplay').style.display = 'block'; 
+                    console.log("Starting OMEGA Boss Fight!");
+                    const omegaBossSpawn = findSafeSpawnPosition(30 * 2.5, 300, walls, player ? [player] : []); 
+                    enemies.push(new Tank(omegaBossSpawn.x, omegaBossSpawn.y, false, 'BALANCE', selectedGameMode, 'OMEGA'));
+                    numRepairKitsToSpawn = 0; 
+                    if (player) {
+                        player.repairKitStock = []; 
+                        for (let i = 0; i < 5; i++) {
+                             player.repairKitStock.push(new RepairKit(0,0)); 
+                        }
+                    }
+                    break;
+            }
+            // Spawn repair kits on field (except maybe for OMEGA if numRepairKitsToSpawn is 0)
+            for (let i = 0; i < numRepairKitsToSpawn; i++) {
+                if (selectedGameMode === 'OMEGA_BOSS_FIGHT' && numRepairKitsToSpawn > 0 && player.repairKitStock.length >= 5) {
+                    // If OMEGA fight and player already has 5 from the direct grant, don't spawn more on field unless specifically desired.
+                    // This logic assumes numRepairKitsToSpawn was changed for OMEGA to spawn field kits too.
+                    // Currently, it's 0 for OMEGA, so this loop won't run for OMEGA field kits.
+                } else {
+                    const kitSpawn = findSafeSpawnPositionForItem(22, walls, enemies.concat(player || []));
+                    if (kitSpawn) repairKits.push(new RepairKit(kitSpawn.x, kitSpawn.y));
+                }
+            }
+
+
+            document.getElementById('chargeBar').style.display = 'none';
+            document.getElementById('chargeFill').style.width = '0%';
+            if (player.tankType === 'POWER') player.isCharging = false;
+
+            updateHUD();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function spawnArenaWave() { 
+            if (selectedGameMode !== 'ARENA') return;
+            enemiesSpawnedThisWave = 0;
+            enemiesThisWave = Math.min(WAVE_ENEMY_COUNT_MIN_BASE + Math.floor(currentWave / 1.5), WAVE_ENEMY_COUNT_MAX_BASE + Math.floor(currentWave / 2.5) );
+            enemiesThisWave = Math.min(Math.max(2, Math.floor(enemiesThisWave)), 10); 
+
+            for (let i = 0; i < enemiesThisWave; i++) {
+                const enemySpawn = findSafeSpawnPosition(30, 120, walls, enemies.concat(player || []));
+                if (enemySpawn) {
+                    let enemyTypeForWave = 'BALANCE';
+                    if (currentWave > 2 && Math.random() < 0.35) enemyTypeForWave = 'SPEED';
+                    if (currentWave > 4 && Math.random() < 0.25) enemyTypeForWave = 'AUTOMATON';
+                    if (currentWave > 6 && Math.random() < 0.15) enemyTypeForWave = 'RAKETA'; 
+                    enemies.push(new Tank(enemySpawn.x, enemySpawn.y, false, enemyTypeForWave, selectedGameMode));
+                    enemiesSpawnedThisWave++;
+                }
+            }
+            updateHUD();
+        }
+
+        function findSafeSpawnPositionForItem(itemSize, existingWalls, existingTanks = []) { 
+            return findSafeSpawnPosition(itemSize, 0, existingWalls, existingTanks, 60);
+        }
+
+        function findSafeSpawnPosition(size, minDistanceFromPlayer = 0, existingWalls, existingOtherTanks = [], maxAttempts = 120) { 
+            let attempts = 0; let x, y;
+            const occupiedAreas = existingOtherTanks.map(t => ({ x: t.x, y: t.y, size: t.size }));
+
+            do {
+                x = Math.random() * (canvas.width - size * 2.5) + size * 1.25; 
+                y = Math.random() * (canvas.height - size * 2.5) + size * 1.25;
+                attempts++;
+
+                let collisionWithWall = false;
+                for (let wall of existingWalls) {
+                    if (x - size / 2 < wall.x + wall.width && x + size / 2 > wall.x &&
+                        y - size / 2 < wall.y + wall.height && y + size / 2 > wall.y) {
+                        collisionWithWall = true; break;
+                    }
+                }
+                if (collisionWithWall) continue;
+
+                let collisionWithTank = false;
+                for (let tankArea of occupiedAreas) {
+                    const distSq = (x - tankArea.x) ** 2 + (y - tankArea.y) ** 2;
+                    if (distSq < ((size / 2 + tankArea.size / 2) * 1.3) ** 2) { 
+                        collisionWithTank = true; break;
+                    }
+                }
+                if (collisionWithTank) continue;
+
+                let tooCloseToPlayerFlag = false;
+                if (player && minDistanceFromPlayer > 0) {
+                    const distSqToPlayer = (x - player.x) ** 2 + (y - player.y) ** 2;
+                    if (distSqToPlayer < minDistanceFromPlayer ** 2) {
+                        tooCloseToPlayerFlag = true;
+                    }
+                }
+                if (tooCloseToPlayerFlag) continue;
+                return { x, y };
+            } while (attempts < maxAttempts);
+
+            console.warn(`findSafeSpawnPosition: Could not find ideal spot. Fallbacks.`);
+            const corners = [ {x:size*1.5, y:size*1.5}, {x:canvas.width-size*1.5, y:size*1.5}, {x:size*1.5, y:canvas.height-size*1.5}, {x:canvas.width-size*1.5, y:canvas.height-size*1.5}];
+            for(let corner of corners){ 
+                 let valid = true;
+                 for (let wall of existingWalls) { if (corner.x - size / 2 < wall.x + wall.width && corner.x + size / 2 > wall.x && corner.y - size / 2 < wall.y + wall.height && corner.y + size / 2 > wall.y) {valid = false; break;} }
+                 if(!valid) continue;
+                 for (let tankArea of occupiedAreas) { if (((corner.x - tankArea.x) ** 2 + (corner.y - tankArea.y) ** 2) < ((size / 2 + tankArea.size / 2)*1.3)**2 ) {valid = false; break;}}
+                 if(!valid) continue;
+                 if (player && minDistanceFromPlayer > 0) { if (((corner.x - player.x) ** 2 + (corner.y - player.y) ** 2) < minDistanceFromPlayer ** 2) {valid=false;}}
+                 if(valid) return corner;
+            }
+            return { x: canvas.width/2, y: canvas.height/2 }; 
+        }
+
+
+        function gameLoop() { 
+            if (gameState === 'result') return;
+             if (gameState === 'playing' || gameState === 'ending') {
+                 handleInput(); update();
+            }
+            render();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function update() { 
+            if (gameState !== 'playing' && gameState !== 'ending') return;
+
+            if (gameState === 'playing' && !gameStarted) {
+                countdownTimer--;
+                const cEl = document.getElementById('countdown');
+                if (countdownTimer > 0) { cEl.style.display = 'block'; cEl.textContent = String(Math.ceil(countdownTimer / 60)); }
+                else { cEl.style.display = 'none'; gameStarted = true; }
+            }
+
+            if (player && !player.isDestroyed) {
+                player.update();
+                if (player.isDestroyed && gameState === 'playing') endGame(false);
+            }
+
+            for (let i = enemies.length - 1; i >= 0; i--) { 
+                const enemy = enemies[i];
+                if (!enemy.isDestroyed) {
+                    enemy.update(); // This now also updates orbiters if enemy is ORBITAL boss
+                } 
+            }
+            const trulyAliveEnemies = enemies.filter(e => !e.isDestroyed && !e.isExploding && (!e.orbiters || e.orbiters.every(o => o.isDestroyed)));
+
+
+            for (let i = activeExplosions.length - 1; i >= 0; i--) {
+                if (activeExplosions[i].update()) activeExplosions.splice(i, 1);
+            }
+
+            if (gameState === 'playing' && gameStarted && player && !player.isDestroyed) {
+                for (let i = repairKits.length - 1; i >= 0; i--) {
+                    const kit = repairKits[i];
+                    if (kit.active && kit.checkCollisionWithPlayer(player)) {
+                        kit.active = false; player.repairKitStock.push(kit);
+                    }
+                }
+            }
+
+            if (gameState === 'playing' && gameStarted) {
+                // Player Bullet vs Enemy/Orbiter Collision
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const bullet = bullets[i];
+                    if (!bullet) { bullets.splice(i,1); continue; }
+                    
+                    if (bullet.update()) { 
+                        bullets.splice(i, 1); 
+                        continue; 
+                    }
+
+                    if (bullet.isPlayer) { // Player bullets can hit enemies and orbiters
+                        let hitSomething = false;
+                        // Check against main enemy tanks
+                        for (let j = enemies.length - 1; j >= 0; j--) {
+                            const enemy = enemies[j];
+                             if(!enemy || enemy.isExploding || enemy.isDestroyed) continue;
+                            const dx = bullet.x - enemy.x; const dy = bullet.y - enemy.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                            if (dist < enemy.size / 2 + bullet.size / 2) {
+                                if (bullet.bulletType === 'NUCLEAR_MAIN') createNuclearExplosion(bullet.x, bullet.y, bullet.isPlayer);
+                                else enemy.takeDamage(bullet.damage);
+                                gameStats.shotsHit++;
+                                bullets.splice(i, 1); hitSomething = true; break;
+                            }
+                        }
+                        if (hitSomething) continue;
+
+                        // Check against orbiters (if any)
+                        for (let enemy of enemies) { // Find the ORBITAL boss, if it exists
+                            if (enemy.bossVariant === 'ORBITAL' && enemy.orbiters) {
+                                for (let k = enemy.orbiters.length - 1; k >= 0; k--) {
+                                    const orbiter = enemy.orbiters[k];
+                                    if (orbiter.isExploding || orbiter.isDestroyed) continue;
+                                    const dxOrb = bullet.x - orbiter.x; const dyOrb = bullet.y - orbiter.y;
+                                    const distOrb = Math.sqrt(dxOrb * dxOrb + dyOrb * dyOrb);
+                                    if (distOrb < orbiter.size / 2 + bullet.size / 2) {
+                                        orbiter.takeDamage(bullet.damage);
+                                        gameStats.shotsHit++;
+                                        bullets.splice(i, 1); hitSomething = true; break;
+                                    }
+                                }
+                            }
+                            if (hitSomething) break; 
+                        }
+                        if (hitSomething) continue;
+
+                    } else { // Enemy bullets (including AI Missiles from bosses) vs Player
+                        if (player && !player.isDestroyed && !player.isExploding) {
+                            const dx = bullet.x - player.x; const dy = bullet.y - player.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy);
+                             let bulletEffectiveRadius = bullet.size / 2;
+                            if (bullet.bulletType === 'RAKETA' || bullet.bulletType === 'SNIPER_SHOT') {
+                                bulletEffectiveRadius = Math.max(bullet.length || bullet.size, bullet.width || bullet.size) / 2 * 0.85; 
+                            }
+                            if (dist < player.size / 2 + bulletEffectiveRadius) {
+                                if (bullet.bulletType === 'NUCLEAR_MAIN') createNuclearExplosion(bullet.x, bullet.y, bullet.isPlayer);
+                                else {
+                                    if (bullet.bulletType === 'RAKETA') createExplosionEffect(bullet.x, bullet.y);
+                                    player.takeDamage(bullet.damage);
+                                }
+                                bullets.splice(i, 1); continue;
+                            }
+                        }
+                    }
+                }
+                 // Bullet-Bullet collision (Player bullets vs AI Missiles)
+                const playerBulletsThisFrame = bullets.filter(b => b.isPlayer && !b.isDestroyed);
+                const aiMissilesThisFrame = bullets.filter(b => b.isAIMissile && !b.isDestroyed);
+
+                for (let pBullet of playerBulletsThisFrame) {
+                    if (pBullet.isDestroyed) continue; 
+                    for (let aiMissile of aiMissilesThisFrame) {
+                        if (aiMissile.isDestroyed) continue;
+
+                        const dx = pBullet.x - aiMissile.x;
+                        const dy = pBullet.y - aiMissile.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const pBulletRadius = pBullet.size / 2;
+                        const aiMissileRadius = (aiMissile.length || aiMissile.size) / 2 * 0.8; 
+
+                        if (dist < pBulletRadius + aiMissileRadius) {
+                            aiMissile.takeDamage(pBullet.damage); 
+                            pBullet.isDestroyed = true;           
+                            break; 
+                        }
+                    }
+                }
+                // Orbiter Laser vs Player Collision
+                if (player && !player.isDestroyed && !player.isExploding) {
+                    for (const enemy of enemies) {
+                        if (enemy.bossVariant === 'ORBITAL' && enemy.orbiters) {
+                            for (const orbiter of enemy.orbiters) {
+                                if (orbiter.laserState === 'firing' && !orbiter.isDestroyed) {
+                                    // Simple line-circle intersection
+                                    const laserStartX = orbiter.x;
+                                    const laserStartY = orbiter.y;
+                                    const laserEndX = orbiter.x + Math.cos(orbiter.laserTargetAngle) * (canvas.width + canvas.height); // Ensure it's long
+                                    const laserEndY = orbiter.y + Math.sin(orbiter.laserTargetAngle) * (canvas.width + canvas.height);
+
+                                    // Check collision between line segment (laser) and circle (player)
+                                    // https://stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
+                                    const len = Math.sqrt( (laserEndX-laserStartX)**2 + (laserEndY-laserStartY)**2 );
+                                    const dot = ( ((player.x-laserStartX)*(laserEndX-laserStartX)) + ((player.y-laserStartY)*(laserEndY-laserStartY)) ) / (len*len);
+                                    const closestX = laserStartX + (dot * (laserEndX-laserStartX));
+                                    const closestY = laserStartY + (dot * (laserEndY-laserStartY));
+                                    
+                                    // Check if closest point is on the segment (laser is effectively infinite in one direction for simplicity here)
+                                    // For a true segment, check if dot is between 0 and 1.
+                                    // Since laser is long, we mainly care about distance to the line.
+                                    // However, ensure the closest point isn't "behind" the orbiter.
+                                    const angleToClosest = Math.atan2(closestY - orbiter.y, closestX - orbiter.x);
+                                    let angleDiffLaser = Math.abs(angleToClosest - orbiter.laserTargetAngle);
+                                    while (angleDiffLaser > Math.PI) angleDiffLaser -= 2 * Math.PI;
+                                    
+                                    if (Math.abs(angleDiffLaser) < Math.PI / 2) { // Closest point is in front of orbiter
+                                        const distanceToLine = Math.sqrt( (player.x-closestX)**2 + (player.y-closestY)**2 );
+                                        if (distanceToLine < player.size / 2 + 1.5) { // 1.5 is half laser width
+                                            player.takeDamage(orbiter.laserDamage / 60); // Damage per frame during firing
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    if (bullets[i].isDestroyed) {
+                        bullets.splice(i, 1);
+                    }
+                }
+            }
+
+
+            if (gameState === 'playing' && gameStarted) {
+                if (player && player.isDestroyed) {
+                    endGame(false);
+                } else if (selectedGameMode === 'SINGLE_MATCH' || selectedGameMode === 'RANKED_MATCH' || selectedGameMode === 'OMEGA_BOSS_FIGHT') {
+                    let allEnemiesDefeated = enemies.every(e => e.isDestroyed);
+                    if (selectedGameMode === 'RANKED_MATCH' && enemies.length > 0 && enemies[0].bossVariant === 'ORBITAL') {
+                        // For ORBITAL boss, victory is when the main body is destroyed, orbiters might still be around or get auto-destroyed.
+                        // The Tank.update() method for ORBITAL boss should handle destroying its orbiters when it's destroyed.
+                    }
+
+                    if (allEnemiesDefeated && enemies.length > 0 && player && !player.isDestroyed) {
+                        endGame(true);
+                    }
+                } else if (selectedGameMode === 'ARENA') {
+                    if (trulyAliveEnemies.length === 0 && enemiesSpawnedThisWave > 0 && enemies.every(e => e.isDestroyed)) {
+                        currentWave++;
+                        const kitSpawnArena = findSafeSpawnPositionForItem(22, walls, enemies.concat(player || []));
+                        if (kitSpawnArena) repairKits.push(new RepairKit(kitSpawnArena.x, kitSpawnArena.y));
+                        setTimeout(spawnArenaWave, 1500); 
+                        enemiesSpawnedThisWave = 0; 
+                    }
+                }
+            }
+            updateHUD();
+        }
+
+        function render() { 
+            ctx.fillStyle = '#000800';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            for (let wall of walls) wall.draw();
+            for (let kit of repairKits) kit.draw();
+            
+            if (player) player.draw(); 
+            for (let enemy of enemies) {
+                enemy.draw(); // This now also draws orbiters if enemy is ORBITAL boss
+            }
+            
+            for (let bullet of bullets) bullet.draw(); 
+            for (let exp of activeExplosions) exp.draw(); 
+        }
+
+        function updateHUD() { 
+            document.getElementById('playerHP').textContent = player ? String(Math.max(0, player.hp)) : '0';
+            
+            let aliveEnemyCount = 0;
+            enemies.forEach(e => {
+                if (!e.isDestroyed && !e.isExploding) {
+                    aliveEnemyCount++;
+                    if (e.bossVariant === 'ORBITAL' && e.orbiters) {
+                        aliveEnemyCount += e.orbiters.filter(o => !o.isDestroyed && !o.isExploding).length;
+                    }
+                }
+            });
+            document.getElementById('enemyCount').textContent = String(aliveEnemyCount);
+
+            document.getElementById('repairKitCount').textContent = player ? String(player.repairKitStock.length) : '0';
+
+            const stockDisplay = document.getElementById('repairKitStockDisplay');
+            stockDisplay.innerHTML = '';
+            if (player) {
+                for (let i = 0; i < player.repairKitStock.length; i++) {
+                    const icon = document.createElement('div'); icon.className = 'repair-kit-icon-stock';
+                    stockDisplay.appendChild(icon);
+                }
+            }
+
+            const armorDisplayDiv = document.getElementById('armorDisplay');
+            const armorTextEl = document.getElementById('playerArmor');
+            let showArmor = false;
+            let currentArmor = 0;
+            if(player && player.maxArmor > 0) {
+                showArmor = true;
+                currentArmor = player.armor;
+            } else if ((selectedGameMode === 'RANKED_MATCH' || selectedGameMode === 'OMEGA_BOSS_FIGHT') && enemies.length > 0 && enemies[0] && enemies[0].maxArmor > 0) {
+                 showArmor = true;
+                 currentArmor = enemies[0].armor;
+            }
+
+
+            if (showArmor) {
+                armorDisplayDiv.style.display = 'block';
+                armorTextEl.textContent = String(Math.max(0, currentArmor));
+            } else {
+                armorDisplayDiv.style.display = 'none';
+            }
+
+
+            const waveDisplayDiv = document.getElementById('waveDisplay');
+            if (selectedGameMode === 'ARENA') {
+                waveDisplayDiv.style.display = 'block';
+                document.getElementById('currentWave').textContent = String(currentWave);
+            } else {
+                waveDisplayDiv.style.display = 'none';
+            }
+
+            const ammoDisplayEl = document.getElementById('ammoLeft');
+            if (player && ammoDisplayEl) {
+                let ammoText = "∞";
+                if (player.isReloading && player.reloadTime > 0) {
+                    const reloadPercentage = 100 - Math.floor((player.reloadTimer / player.reloadTime) * 100);
+                    ammoText = `装填: ${String(Math.max(0, Math.min(100, reloadPercentage)))}%`;
+                }
+
+                switch (player.tankType) {
+                    case 'POWER':
+                        if (player.isCharging) ammoText = `チャージ: ${String(Math.min(100, Math.floor((Date.now() - player.chargeStartTime) / player.chargeDuration * 100)))}%`;
+                        else if (!player.isReloading) ammoText = "準備完了";
+                        break;
+                    case 'RAKETA':
+                        if (player.isFiringBurst) ammoText = `斉射: ${String(player.bulletsInBurstLeft)}`;
+                        else if (!player.isReloading && player.isPlayer) ammoText = "準備完了"; 
+                        else if (player.isReloading && player.isPlayer) {  }
+                        else ammoText = "∞"; 
+                        break;
+                    case 'NUCLEAR':
+                        if (player.ammo === 0 && !player.isReloading) ammoText = "弾切れ";
+                        else if (player.isReloading && player.ammo < player.maxAmmo) {
+                            const reloadPercentage = 100 - Math.floor((player.reloadTimer / player.reloadTime) * 100);
+                            ammoText = `装填: ${String(Math.max(0,Math.min(100,reloadPercentage)))}% | ${String(player.ammo)}/${String(player.maxAmmo)}`;
+                        } else {
+                            ammoText = `核: ${String(player.ammo)}/${String(player.maxAmmo)}`;
+                        }
+                        break;
+                    case 'AUTOMATON':
+                        if (!player.isReloading) ammoText = `弾倉: ${String(player.bulletsInClip)}/${String(player.clipSize)}`;
+                        break;
+                }
+                ammoDisplayEl.textContent = ammoText;
+            } else if (ammoDisplayEl) {
+                ammoDisplayEl.textContent = "N/A";
+            }
+        }
+
+        function endGame(victory) { 
+            if (gameState === 'ending' || gameState === 'result') return;
+            gameState = 'ending'; gameStarted = false;
+            isMouseDown = false; 
+            document.getElementById('chargeBar').style.display = 'none';
+            if(enemies.length > 0 && enemies[0] && (enemies[0].bossVariant === 'SNIPER' || enemies[0].bossVariant === 'OMEGA' || enemies[0].bossVariant === 'ORBITAL')) {
+                if (enemies[0].sniperLaserActive) enemies[0].sniperLaserActive = false;
+                if (enemies[0].bossVariant === 'ORBITAL' && enemies[0].orbiters) {
+                    enemies[0].orbiters.forEach(orb => {
+                        orb.laserState = 'idle'; // Stop lasers on game end
+                    });
+                }
+            }
+
+
+            setTimeout(() => {
+                gameState = 'result';
+                const acc = gameStats.shotsFired > 0 ? (gameStats.shotsHit / gameStats.shotsFired * 100).toFixed(1) : "0.0";
+                let resultMessage = `命中弾: ${gameStats.shotsHit}/${gameStats.shotsFired}<br>命中率: ${acc}%<br>撃破数: ${gameStats.enemiesKilled}<br>被ダメージ: ${gameStats.damageReceived}`;
+                
+                let titleText = victory ? '勝利！' : '敗北...';
+                if (selectedGameMode === 'OMEGA_BOSS_FIGHT') {
+                    titleText = victory ? 'OMEGA 撃破！！' : 'OMEGA に敗北...';
+                } else if (selectedGameMode === 'ARENA' && !victory) {
+                    titleText = `ゲームオーバー`;
+                    resultMessage += `<br>到達ウェーブ: ${currentWave}`;
+                }
+
+                document.getElementById('resultTitle').textContent = titleText;
+                document.getElementById('resultStats').innerHTML = resultMessage;
+                showScreen('resultScreen');
+            }, END_GAME_DELAY);
+        }
+
+        // --- UI Navigation Functions ---
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+            const targetScreen = document.getElementById(screenId);
+            if (targetScreen) targetScreen.classList.add('active');
+            else console.error("Screen not found: " + screenId);
+            if (screenId !== 'titleScreen') {
+                konamiCodeProgress = 0;
+            }
+        }
+        function backToTitle() { gameState = 'title'; showScreen('titleScreen'); }
+        function selectTank(tankType) {
+            selectedTankType = tankType;
+            document.getElementById('selectedTankDisplay').textContent = tankType;
+            document.querySelectorAll('#customizeScreen .tank-option').forEach(opt => opt.classList.remove('selected'));
+            const selectedOption = document.getElementById(tankType.toLowerCase() + '-option');
+            if (selectedOption) selectedOption.classList.add('selected');
+        }
+        function showCustomize() { gameState = 'customize'; showScreen('customizeScreen'); }
+        function showControlsScreen() { gameState = 'controls'; showScreen('controlsScreen'); }
+        function showGameModeScreen() { gameState = 'mode_select'; showScreen('gameModeScreen');}
+
+        // --- Event Listeners ---
+        const keys = {};
+        document.addEventListener('keydown', (e) => {
+            const key = e.key.toLowerCase();
+            keys[key] = true;
+
+            if (gameState === 'title' && document.getElementById('titleScreen').classList.contains('active')) {
+                if (key === konamiCode[konamiCodeProgress]) {
+                    konamiCodeProgress++;
+                    if (konamiCodeProgress === konamiCode.length) {
+                        konamiCodeProgress = 0; 
+                        console.log("Konami Command Entered! Starting OMEGA Boss Fight.");
+                        startGame('OMEGA_BOSS_FIGHT'); 
+                    }
+                } else if (key === konamiCode[0]) { 
+                    konamiCodeProgress = 1;
+                }
+                 else {
+                    konamiCodeProgress = 0; 
+                }
+            }
+
+
+            if (key === 'r' && gameState === 'playing' && player && gameStarted && !player.isExploding && !player.isDestroyed) player.useRepairKit();
+        });
+        document.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (gameState === 'playing' && player && gameStarted && !player.isExploding && !player.isDestroyed) {
+                const rect = canvas.getBoundingClientRect();
+                player.turretAngle = Math.atan2((e.clientY - rect.top) - player.y, (e.clientX - rect.left) - player.x);
+            }
+        });
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (e.button === 0 && gameState === 'playing' && player && gameStarted && !player.isExploding && !player.isDestroyed) {
+                isMouseDown = true;
+                if (player.tankType !== 'SPEED') {
+                    player.shoot();
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 0) {
+                isMouseDown = false;
+            }
+        });
+        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+
+        function handleInput() { 
+            if (gameState !== 'playing' || !player || !gameStarted || player.isExploding || player.isDestroyed) return;
+            
+            let dx = 0, dy = 0;
+            if (keys['w'] || keys['arrowup']) dy -= 1; if (keys['s'] || keys['arrowdown']) dy += 1;
+            if (keys['a'] || keys['arrowleft']) dx -= 1; if (keys['d'] || keys['arrowright']) dx += 1;
+            if (dx !== 0 || dy !== 0) {
+                player.targetAngle = Math.atan2(dy, dx); 
+                const mag = Math.sqrt(dx * dx + dy * dy);
+                const moveX = (dx / mag) * player.speed; const newPlayerX = player.x + moveX;
+                const moveY = (dy / mag) * player.speed; const newPlayerY = player.y + moveY;
+                if (!player.checkWallCollision(newPlayerX, player.y)) player.x = newPlayerX;
+                if (!player.checkWallCollision(player.x, newPlayerY)) player.y = newPlayerY;
+            }
+            player.x = Math.max(player.size / 2, Math.min(canvas.width - player.size / 2, player.x));
+            player.y = Math.max(player.size / 2, Math.min(canvas.height - player.size / 2, player.y));
+
+            if (isMouseDown && player.tankType === 'SPEED') {
+                player.shoot(); 
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { 
+            selectTank(selectedTankType); 
+            showScreen('titleScreen');
+        });
+        // END OF JAVASCRIPT
+    </script>
+</body>
+</html>
